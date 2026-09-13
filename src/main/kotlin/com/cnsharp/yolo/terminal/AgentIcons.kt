@@ -2,7 +2,6 @@ package com.cnsharp.yolo.terminal
 
 import com.cnsharp.yolo.Yolo
 import com.cnsharp.yolo.settings.AgentRegistry
-import com.cnsharp.yolo.terminal.AgentIcons.SIZE
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.IconLoader
@@ -114,20 +113,31 @@ object AgentIcons {
      * dropdown), so we wrap the source and do the scaling ourselves in [paintIcon].
      */
     private fun fitToSize(icon: Icon): Icon {
-        if (icon.iconWidth == SIZE && icon.iconHeight == SIZE) return icon
+        val w = icon.iconWidth
+        val h = icon.iconHeight
+        if (w <= 0 || h <= 0) return icon
+        if (w == SIZE && h == SIZE) return icon
+        // Scale to fit inside the SIZE x SIZE box, keeping the aspect ratio, and centre the result so
+        // wide/tall logos (e.g. aider.svg 200x60) don't hug the top-left corner.
+        val scale = SIZE.toDouble() / max(w, h)
+        val dx = (SIZE - w * scale) / 2.0
+        val dy = (SIZE - h * scale) / 2.0
         return object : Icon {
             override fun getIconWidth(): Int = SIZE
             override fun getIconHeight(): Int = SIZE
             override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
-                val w = icon.iconWidth
-                val h = icon.iconHeight
-                if (w <= 0 || h <= 0) return
-                val scale = SIZE.toDouble() / max(w, h)
                 val g2 = g.create() as Graphics2D
-                g2.translate(x, y)
-                g2.scale(scale, scale)
-                icon.paintIcon(c, g2, 0, 0)
-                g2.dispose()
+                try {
+                    g2.translate(x, y)
+                    // Hard clip to the 16x16 box: a source icon that ignores the scale transform below is
+                    // then truncated instead of spilling out and stretching the dropdown row / tab.
+                    g2.clipRect(0, 0, SIZE, SIZE)
+                    g2.translate(dx, dy)
+                    g2.scale(scale, scale)
+                    icon.paintIcon(c, g2, 0, 0)
+                } finally {
+                    g2.dispose()
+                }
             }
         }
     }
