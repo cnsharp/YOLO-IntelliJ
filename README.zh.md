@@ -18,7 +18,7 @@
 
 一个工具窗口(右侧,**y** 图标),在不触碰任何内部 Terminal API 的前提下,复刻了 Terminal 的 **AI Agents** 体验:
 
-- 列出你**已安装**的智能体 —— 包括官方推荐的智能体(Claude Code、Codex、CodeBuddy、ZCode……)以及你自己的自定义工具。
+- 列出你**已安装**的智能体 —— 包括官方推荐的智能体(Claude Code、Codex、CodeBuddy……)以及你自己的自定义工具。
   在 `PATH` 上检测不到的智能体不会显示,因此列表始终与当前机器相关。
 - 每一行显示智能体的图标、名称以及其配置的跳过(skip)与恢复(resume)标志。
 - 下拉列表从**已缓存的安装扫描结果**瞬间加载 —— 复用上一次运行所做的检测,只有当已安装智能体的集合真正发生变化时,
@@ -38,12 +38,12 @@ Claude Code 是 `--dangerously-skip-permissions`,Codex 是 `--yolo`,CodeBuddy �
 ### 恢复会话
 
 面板标题栏里的 **Resume Session** 开关。打开它,下一次启动智能体时就会在命令后追加其恢复标志 ——
-Claude Code / CodeBuddy / Copilot / Goose / Hermes / Kimi / Pi 为 `-r`,Codex / Cursor / TraeCode 为 `--resume`,
+Claude Code / CodeBuddy / Copilot / Goose / Hermes / Kimi / Pi 为 `-r`,Codex 为 `resume --last`,Cursor / TraeCode 为 `--resume`,
 Cline 为 `--taskId` —— 于是智能体会继续上一次的会话,而不是从头开始。
 
 该标志是**每个智能体独立配置**的,且完全可定制(见[配置](#配置))。插件已为常见智能体预填好正确的恢复标志;
 自定义工具则在 **恢复会话参数(Resume flag)** 列中自行填写 —— 自定义工具没有内置的 `agents.json` 条目,
-那一列正是你为它设置恢复参数的唯一途径。没有命令行恢复能力的智能体(例如 Gemini / OpenCode / ZCode 用的是 TUI 的 `/resume`)
+那一列正是你为它设置恢复参数的唯一途径。没有命令行恢复能力的智能体(例如 OpenCode 用的是 TUI 的 `/resume`)
 在开关打开时仍照常启动、不会注入任何标志。
 
 **该开关默认关闭,且永远不会自行打开。**
@@ -199,7 +199,7 @@ localIdeaPath=/Applications/IntelliJ IDEA.app
 
 行分两种,按优先级从高到低排列:
 
-1. **推荐智能体**(Claude Code、Codex、CodeBuddy、ZCode……)—— 只读,且 **Claude Code** 和 **Codex** 固定在最上方,不可删除。
+1. **推荐智能体**(Claude Code、Codex、CodeBuddy……)—— 只读,且 **Claude Code** 和 **Codex** 固定在最上方,不可删除。
 2. **你自己的自定义工具** —— 完全可编辑,按你创建的顺序排列。
 
 推荐智能体上只有跳过标志与恢复会话参数可编辑。这是有意为之:插件应当扩展面板,而不是接管它。
@@ -208,33 +208,49 @@ localIdeaPath=/Applications/IntelliJ IDEA.app
 
 - **跳过标志与恢复参数自动预填。** 打开设置,已知智能体已经带上了正确的标志。在新建行中键入已知 ID 或命令时,它们会随输入自动补全。你手动设置的值永远不会被覆盖。
 - **重复项在你输入时即被捕获。** 重复的 ID 或命令会立刻把状态行变红,且应用(Apply)会拒绝保存。命令按可执行文件名比较,因此 `/usr/bin/claude` 和 `claude.cmd` 算作同一个工具。
-- **每次启动时检测已安装的智能体。** 插件在后台检查每个已知智能体的命令 —— 先查 `PATH`,再实际运行一次(`--version`) —— 然后把检测到的推荐智能体加入列表。这发生在**每次启动**,而不只是第一次,因此你之后安装的某个工具(例如通过 npm 安装的 Gemini)会自动出现。它**不会**自动发现你自己写的任意工具 —— 那些请作为自定义工具添加。结果会被缓存,因此面板之后能立即打开。
+- **每次启动时检测已安装的智能体。** 插件在后台检查每个已知智能体的命令 —— 先查 `PATH`,再实际运行一次(`--version`) —— 然后把检测到的推荐智能体加入列表。这发生在**每次启动**,而不只是第一次,因此你之后安装的某个工具(例如通过 npm 安装的 OpenCode)会自动出现。它**不会**自动发现你自己写的任意工具 —— 那些请作为自定义工具添加。结果会被缓存,因此面板之后能立即打开。
 - **校验(Validate)** 以相同方式(先查 PATH,再运行一次)检查某行的命令,并在有图标 URL 时下载该图标。
 
 ### 已知智能体
 
-下表中的标志已预填。它们全部可编辑,且此列表只是方便起见 —— 并非唯一真相来源。最终运行的是设置里所写的内容。
+此列表只是方便起见 —— 并非唯一真相来源。最终运行的是设置里所写的内容。
 
-| 智能体 | 命令 | 跳过标志 | 恢复会话参数 |
+| id | 显示名 | 命令 | 官网 |
 |---|---|---|---|
-| Claude Code | `claude` | `--dangerously-skip-permissions` | `-r` |
-| Codex | `codex` | `--yolo` | `--resume` |
-| CodeBuddy | `codebuddy` | `-y` | `-r` |
-| Gemini | `gemini` | `--yolo` | 无 —— 仅 TUI `/resume` |
-| Copilot | `copilot` | `--allow-all` | `-r` |
-| Cursor | `cursor-agent` | `--force` | `--resume` |
-| Kimi | `kimi` | `--yolo` | `-r` |
-| Qoder | `qoder` | `--dangerously-skip-permissions` | 无 —— 未实现 |
-| Hermes | `hermes` | `--yolo` | `-r` |
-| OpenCode | `opencode` | `--auto` | 无 —— 仅 TUI `/resume` |
-| Continue | `cn` | `--auto` | 无 |
-| Cline | `cline` | `--auto-approve true` | `--taskId` |
-| Goose | `goose` | 环境变量 `GOOSE_MODE=auto` —— 并非标志 | `-r` |
-| Kilo Code | `kilo` | 无 —— 仅 `kilo run` 接受 | 无 |
-| OpenClaw | `openclaw` | 无 —— 仅持久配置 | 无 —— `openclaw resume` 子命令 |
-| Pi | `pi` | `--approve` | `-r` |
-| TraeCode | `traecli` | 无 | `--resume` |
-| ZCode | `zcode` | 无 —— 无启动期跳过标志 | 无 —— 仅 TUI `/resume` |
+| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="src/main/resources/icons/agents/claude.svg" height="20" alt="Claude Code"></a> |
+| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="src/main/resources/icons/agents/codex.svg" height="20" alt="Codex"></a> |
+| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="src/main/resources/icons/agents/cursor.svg" height="20" alt="Cursor"></a> |
+| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="src/main/resources/icons/agents/copilot.svg" height="20" alt="GitHub Copilot"></a> |
+| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="src/main/resources/icons/agents/opencode.svg" height="20" alt="OpenCode"></a> |
+| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="src/main/resources/icons/agents/aider.svg" height="20" alt="Aider"></a> |
+| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="src/main/resources/icons/agents/cline.svg" height="20" alt="Cline"></a> |
+| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="src/main/resources/icons/agents/continue.svg" height="20" alt="Continue"></a> |
+| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="src/main/resources/icons/agents/openclaw.svg" height="20" alt="OpenClaw"></a> |
+| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="src/main/resources/icons/agents/kiro.svg" height="20" alt="Kiro"></a> |
+| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="src/main/resources/icons/agents/goose.svg" height="20" alt="Goose"></a> |
+| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="src/main/resources/icons/agents/crush.png" height="20" alt="Charm Crush"></a> |
+| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="src/main/resources/icons/agents/amp.svg" height="20" alt="Amp"></a> |
+| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="src/main/resources/icons/agents/kimi.svg" height="20" alt="Kimi"></a> |
+| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="src/main/resources/icons/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
+| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="src/main/resources/icons/agents/trae.svg" height="20" alt="TraeCode"></a> |
+| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="src/main/resources/icons/agents/codebuddy.svg" height="20" alt="CodeBuddy"></a> |
+| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="src/main/resources/icons/agents/qoder.svg" height="20" alt="Qoder"></a> |
+| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="src/main/resources/icons/agents/devin.svg" height="20" alt="Devin"></a> |
+| grok | Grok | `grok` | <a href="https://grok.com/"><img src="src/main/resources/icons/agents/grok.svg" height="20" alt="Grok"></a> |
+| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="src/main/resources/icons/agents/antigravity.png" height="20" alt="Antigravity"></a> |
+| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="src/main/resources/icons/agents/mistral-vibe.svg" height="20" alt="Mistral Vibe"></a> |
+| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="src/main/resources/icons/agents/kilo.svg" height="20" alt="Kilo Code"></a> |
+| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="src/main/resources/icons/agents/hermes.png" height="20" alt="Hermes"></a> |
+| pi | Pi | `pi` | <a href="https://pi.dev/"><img src="src/main/resources/icons/agents/pi.svg" height="20" alt="Pi"></a> |
+| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="src/main/resources/icons/agents/droid.svg" height="20" alt="Droid"></a> |
+| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="src/main/resources/icons/agents/aug.svg" height="20" alt="Auggie"></a> |
+| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="src/main/resources/icons/agents/rovo.svg" height="20" alt="Rovo Dev"></a> |
+| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="src/main/resources/icons/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
+| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="src/main/resources/icons/agents/autohand.svg" height="20" alt="Autohand"></a> |
+| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="src/main/resources/icons/agents/command-code.svg" height="20" alt="Command Code"></a> |
+| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="src/main/resources/icons/agents/ante.svg" height="20" alt="Ante"></a> |
+| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="src/main/resources/icons/agents/codebuff.png" height="20" alt="Codebuff"></a> |
+| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="src/main/resources/icons/agents/omp.svg" height="20" alt="OMP"></a> |
 
 任何未列出的工具都可以作为自定义工具正常使用;只需自己填好它的标志即可。
 

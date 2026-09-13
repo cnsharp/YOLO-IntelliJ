@@ -42,13 +42,13 @@ environment variable instead of a flag; those are handled too.
 ### Resume session
 
 A **Resume Session** toggle in the panel header. Turn it on and the next launch starts the agent with its
-resume flag appended — `-r` for Claude Code / CodeBuddy / Copilot / Goose / Hermes / Kimi / Pi, `--resume` for
-Codex / Cursor / TraeCode, `--taskId` for Cline — so the agent continues a previous session instead of starting fresh.
+resume flag appended — `-r` for Claude Code / CodeBuddy / Copilot / Goose / Hermes / Kimi / Pi, `resume --last` for
+Codex, `--resume` for Cursor / TraeCode, `--taskId` for Cline — so the agent continues a previous session instead of starting fresh.
 
 The flag is **per agent** and fully configurable (see [Configuration](#configuration)). The plugin knows the correct
 resume flag for the common agents and pre-fills it, and custom tools set their own in the **Resume flag** column — a
 custom tool has no bundled `agents.json` entry, so that column is the only way to give it a resume flag. Agents without a
-CLI resume capability (e.g. Gemini / OpenCode  use a TUI `/resume` instead of a flag) launch unchanged when the
+CLI resume capability (e.g. OpenCode uses a TUI `/resume` instead of a flag) launch unchanged when the
 toggle is on.
 
 **The toggle is off by default and never turns itself on.**
@@ -225,34 +225,49 @@ Only the Skip flag and Resume flag are editable on promoted agents. That's delib
 - **Duplicates are caught while you type.** A repeated ID or command turns the status line red
   immediately, and Apply refuses to save. Commands are compared by executable name, so
   `/usr/bin/claude` and `claude.cmd` count as the same tool.
-- **Installed agents are detected on each startup.** In the background the plugin checks every known agent's command — first on `PATH`, then by actually running it once (`--version`) — and adds the promoted agents it finds installed. This runs on **every startup, not just the first**, so a tool you install later (e.g. Gemini installed via npm) shows up automatically. It does **not** auto-discover arbitrary tools you wrote yourself — add those as custom tools. The result is cached so the panel opens instantly afterwards.
+- **Installed agents are detected on each startup.** In the background the plugin checks every known agent's command — first on `PATH`, then by actually running it once (`--version`) — and adds the promoted agents it finds installed. This runs on **every startup, not just the first**, so a tool you install later (e.g. OpenCode installed via npm) shows up automatically. It does **not** auto-discover arbitrary tools you wrote yourself — add those as custom tools. The result is cached so the panel opens instantly afterwards.
 - **Validate** checks a row's command the same way (PATH first, then running it once) and downloads its icon URL if it has one.
 
 ### Known agents
 
-Flags below are pre-filled. All of them are editable, and this list is a convenience — not the
-source of truth. What runs is whatever the settings say.
+This list is a convenience — not the source of truth. What runs is whatever the settings say.
 
-| Agent | Command | Skip flag | Resume flag |
+| id | display name | command | website |
 |---|---|---|---|
-| Claude Code | `claude` | `--dangerously-skip-permissions` | `-r` |
-| Codex | `codex` | `--yolo` | `--resume` |
-| CodeBuddy | `codebuddy` | `-y` | `-r` |
-| Gemini | `gemini` | `--yolo` | none — TUI `/resume` only |
-| Copilot | `copilot` | `--allow-all` | `-r` |
-| Cursor | `cursor-agent` | `--force` | `--resume` |
-| Kimi | `kimi` | `--yolo` | `-r` |
-| Qoder | `qoder` | `--dangerously-skip-permissions` | none — not implemented |
-| Hermes | `hermes` | `--yolo` | `-r` |
-| OpenCode | `opencode` | `--auto` | none — TUI `/resume` only |
-| Continue | `cn` | `--auto` | none |
-| Cline | `cline` | `--auto-approve true` | `--taskId` |
-| Goose | `goose` | env `GOOSE_MODE=auto` — not a flag | `-r` |
-| Kilo Code | `kilo` | none — only `kilo run` accepts one | none |
-| OpenClaw | `openclaw` | none — persistent config only | none — `openclaw resume` subcommand |
-| Pi | `pi` | `--approve` | `-r` |
-| TraeCode | `traecli` | none | `--resume` |
-| ZCode | `zcode` | none — no launch-time bypass flag | none — TUI `/resume` only |
+| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="src/main/resources/icons/agents/claude.svg" height="20" alt="Claude Code"></a> |
+| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="src/main/resources/icons/agents/codex.svg" height="20" alt="Codex"></a> |
+| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="src/main/resources/icons/agents/cursor.svg" height="20" alt="Cursor"></a> |
+| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="src/main/resources/icons/agents/copilot.svg" height="20" alt="GitHub Copilot"></a> |
+| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="src/main/resources/icons/agents/opencode.svg" height="20" alt="OpenCode"></a> |
+| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="src/main/resources/icons/agents/aider.svg" height="20" alt="Aider"></a> |
+| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="src/main/resources/icons/agents/cline.svg" height="20" alt="Cline"></a> |
+| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="src/main/resources/icons/agents/continue.svg" height="20" alt="Continue"></a> |
+| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="src/main/resources/icons/agents/openclaw.svg" height="20" alt="OpenClaw"></a> |
+| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="src/main/resources/icons/agents/kiro.svg" height="20" alt="Kiro"></a> |
+| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="src/main/resources/icons/agents/goose.svg" height="20" alt="Goose"></a> |
+| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="src/main/resources/icons/agents/crush.png" height="20" alt="Charm Crush"></a> |
+| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="src/main/resources/icons/agents/amp.svg" height="20" alt="Amp"></a> |
+| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="src/main/resources/icons/agents/kimi.svg" height="20" alt="Kimi"></a> |
+| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="src/main/resources/icons/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
+| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="src/main/resources/icons/agents/trae.svg" height="20" alt="TraeCode"></a> |
+| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="src/main/resources/icons/agents/codebuddy.svg" height="20" alt="CodeBuddy"></a> |
+| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="src/main/resources/icons/agents/qoder.svg" height="20" alt="Qoder"></a> |
+| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="src/main/resources/icons/agents/devin.svg" height="20" alt="Devin"></a> |
+| grok | Grok | `grok` | <a href="https://grok.com/"><img src="src/main/resources/icons/agents/grok.svg" height="20" alt="Grok"></a> |
+| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="src/main/resources/icons/agents/antigravity.png" height="20" alt="Antigravity"></a> |
+| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="src/main/resources/icons/agents/mistral-vibe.svg" height="20" alt="Mistral Vibe"></a> |
+| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="src/main/resources/icons/agents/kilo.svg" height="20" alt="Kilo Code"></a> |
+| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="src/main/resources/icons/agents/hermes.png" height="20" alt="Hermes"></a> |
+| pi | Pi | `pi` | <a href="https://pi.dev/"><img src="src/main/resources/icons/agents/pi.svg" height="20" alt="Pi"></a> |
+| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="src/main/resources/icons/agents/droid.svg" height="20" alt="Droid"></a> |
+| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="src/main/resources/icons/agents/aug.svg" height="20" alt="Auggie"></a> |
+| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="src/main/resources/icons/agents/rovo.svg" height="20" alt="Rovo Dev"></a> |
+| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="src/main/resources/icons/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
+| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="src/main/resources/icons/agents/autohand.svg" height="20" alt="Autohand"></a> |
+| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="src/main/resources/icons/agents/command-code.svg" height="20" alt="Command Code"></a> |
+| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="src/main/resources/icons/agents/ante.svg" height="20" alt="Ante"></a> |
+| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="src/main/resources/icons/agents/codebuff.png" height="20" alt="Codebuff"></a> |
+| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="src/main/resources/icons/agents/omp.svg" height="20" alt="OMP"></a> |
 
 Anything not listed here works fine as a custom tool; just fill in its flag yourself.
 
