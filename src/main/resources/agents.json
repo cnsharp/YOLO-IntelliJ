@@ -226,7 +226,7 @@
     "skipFlag": "--approve",
     "resumeFlag": "-r",
     "icon": "/icons/agents/pi.svg",
-    "url": "https://pi.ai/"
+    "url": "https://pi.dev/"
   },
   {
     "id": "droid",
