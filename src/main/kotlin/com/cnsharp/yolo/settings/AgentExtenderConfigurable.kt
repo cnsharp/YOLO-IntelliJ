@@ -130,7 +130,6 @@ class AgentExtenderConfigurable : Configurable {
             if (e.valueIsAdjusting) return@addListSelectionListener
             updateProvidersButtonState()
         }
-        updateProvidersButtonState()
 
         val titleWithHelp = JPanel(HorizontalLayout(4)).apply {
             add(JBLabel(message("settings.agents.label")))
@@ -143,6 +142,8 @@ class AgentExtenderConfigurable : Configurable {
             add(validateButton())
             add(providersButton())
         }
+        // Initialize the Providers button's enabled state now that it has been created.
+        updateProvidersButtonState()
 
         panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(titleWithHelp, JBScrollPane(toolsTable), true)
