@@ -21,7 +21,6 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.DoNotAskOption
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.wm.ToolWindow
@@ -501,7 +500,11 @@ private class YoloPanel(
         }
 
         var doNotAskAgain = false
-        val doNotAsk = object : DoNotAskOption {
+        // Type as DialogWrapper.DoNotAskOption (not the bare com.intellij.openapi.ui.DoNotAskOption):
+        // the bare-DoNotAskOption overloads of Messages.showOkCancelDialog were removed by 2023.3/2025.2,
+        // but the DialogWrapper.DoNotAskOption overloads exist continuously from 2023.3 through 2026, so
+        // this keeps the warning dialog binary-compatible across the whole supported range.
+        val doNotAsk = object : com.intellij.openapi.ui.DialogWrapper.DoNotAskOption {
             override fun isToBeShown(): Boolean = true
             override fun setToBeShown(toBeShown: Boolean, exitCode: Int) {
                 // Checkbox checked ⇒ "don't show again" ⇒ toBeShown is false.
