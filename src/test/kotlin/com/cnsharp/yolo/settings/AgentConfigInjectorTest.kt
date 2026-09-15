@@ -9,6 +9,8 @@ import java.nio.file.Path
 
 class AgentConfigInjectorTest {
 
+    private val yoloId = YOLO_PROVIDER_ID_PREFIX + "p1"
+
     private lateinit var tempHome: Path
 
     @Before
@@ -44,7 +46,7 @@ class AgentConfigInjectorTest {
     fun `codeBuddy entry references env key and prefixed id`() {
         val p = provider(ProviderFamily.OPENAI, "https://api.openai.com/v1")
         val entry = CodeBuddyInjector.modelEntry(p)!!
-        assertEquals("yolo-p1", entry["id"])
+        assertEquals(yoloId, entry["id"])
         assertEquals("\${${LlmProviderSupport.CODEBUDDY_API_KEY_ENV}}", entry["apiKey"])
         assertEquals("My Provider", entry["name"])
         assertEquals("OpenAI", entry["vendor"])
@@ -62,7 +64,7 @@ class AgentConfigInjectorTest {
         val opts = OpenCodeInjector.options(p)!!
         assertEquals("https://api.anthropic.com/v1", opts["baseURL"])
         assertEquals("{env:${LlmProviderSupport.OPENCODE_API_KEY_ENV}}", opts["apiKey"])
-        assertEquals("yolo-p1/my-model", OpenCodeInjector.modelValue(p))
+        assertEquals("$yoloId/my-model", OpenCodeInjector.modelValue(p))
     }
 
     @Test
@@ -109,7 +111,7 @@ class AgentConfigInjectorTest {
         val models = parsed["models"] as List<*>
         assertEquals(1, models.size)
         val entry = models[0] as Map<*, *>
-        assertEquals("yolo-p1", entry["id"])
+        assertEquals(yoloId, entry["id"])
         // api key is referenced via env, never written in plaintext.
         assertEquals("\${${LlmProviderSupport.CODEBUDDY_API_KEY_ENV}}", entry["apiKey"])
     }
@@ -128,7 +130,7 @@ class AgentConfigInjectorTest {
         val parsed = MiniJson.parse(Files.readString(file)) as Map<*, *>
         val models = parsed["models"] as List<*>
         assertEquals(2, models.size)
-        assertTrue(models.any { (it as Map<*, *>)["id"] == "yolo-p1" })
+        assertTrue(models.any { (it as Map<*, *>)["id"] == yoloId })
         assertTrue(models.any { (it as Map<*, *>)["id"] == "user-model" })
     }
 
@@ -137,7 +139,7 @@ class AgentConfigInjectorTest {
         val file = tempHome.resolve(".codebuddy").resolve("models.json")
         Files.createDirectories(file.parent)
         Files.writeString(file, MiniJson.stringify(linkedMapOf("models" to listOf(
-            linkedMapOf("id" to "yolo-p1"), linkedMapOf("id" to "keep-me")
+            linkedMapOf("id" to yoloId), linkedMapOf("id" to "keep-me")
         ))))
         AgentConfigInjector.removeAll("codebuddy")
         val parsed = MiniJson.parse(Files.readString(file)) as Map<*, *>
@@ -152,10 +154,10 @@ class AgentConfigInjectorTest {
         AgentConfigInjector.applyConfig(p, "codex")
 
         val text = Files.readString(tempHome.resolve(".codex").resolve("config.toml"))
-        assertTrue(text.contains("[model_providers.yolo-p1]"))
+        assertTrue(text.contains("[model_providers.$yoloId]"))
         assertTrue(text.contains("base_url = \"https://my.proxy/v1\""))
         assertTrue(text.contains("env_key = \"${LlmProviderSupport.CODEX_API_KEY_ENV}\""))
-        assertTrue(text.contains("model_provider = \"yolo-p1\""))
+        assertTrue(text.contains("model_provider = \"$yoloId\""))
         assertTrue(text.contains("model = \"my-model\""))
     }
 
@@ -168,10 +170,10 @@ class AgentConfigInjectorTest {
             Files.readString(tempHome.resolve(".config").resolve("opencode").resolve("opencode.json"))
         ) as Map<*, *>
         val providerMap = parsed["provider"] as Map<*, *>
-        val opts = (providerMap["yolo-p1"] as Map<*, *>)["options"] as Map<*, *>
+        val opts = (providerMap[yoloId] as Map<*, *>)["options"] as Map<*, *>
         assertEquals("https://api.anthropic.com/v1", opts["baseURL"])
         assertEquals("{env:${LlmProviderSupport.OPENCODE_API_KEY_ENV}}", opts["apiKey"])
-        assertEquals("yolo-p1/my-model", parsed["model"])
+        assertEquals("$yoloId/my-model", parsed["model"])
     }
 
     @Test
@@ -189,7 +191,7 @@ class AgentConfigInjectorTest {
             Files.readString(tempHome.resolve(".cline").resolve("data").resolve("settings").resolve("providers.json"))
         ) as Map<*, *>
         val providers = parsed["providers"] as Map<*, *>
-        val entry = providers["yolo-p1"] as Map<*, *>
+        val entry = providers[yoloId] as Map<*, *>
         assertEquals("openai-compatible", entry["provider"])
         assertEquals("https://cline.proxy/v1", (entry["config"] as Map<*, *>)["baseUrl"])
         assertEquals("my-model", (entry["config"] as Map<*, *>)["modelId"])
@@ -220,12 +222,12 @@ class AgentConfigInjectorTest {
         val p = provider(ProviderFamily.OPENAI, "https://kimi.proxy/v1")
         AgentConfigInjector.applyConfig(p, "kimi")
         val text = Files.readString(tempHome.resolve(".kimi").resolve("config.toml"))
-        assertTrue(text.contains("[providers.yolo-p1]"))
+        assertTrue(text.contains("[providers.$yoloId]"))
         assertTrue(text.contains("base_url = \"https://kimi.proxy/v1\""))
         assertTrue(text.contains("type = \"openai_legacy\""))
         // Kimi key is not written by YOLO (config-only plaintext); the user fills it.
         assertFalse(text.contains("api_key"))
-        assertTrue(text.contains("[models.yolo-p1]"))
+        assertTrue(text.contains("[models.$yoloId]"))
     }
 
     @Test
@@ -237,7 +239,7 @@ class AgentConfigInjectorTest {
         ) as Map<*, *>
         val models = parsed["models"] as Map<*, *>
         val providers = models["providers"] as Map<*, *>
-        val entry = providers["yolo-p1"] as Map<*, *>
+        val entry = providers[yoloId] as Map<*, *>
         assertEquals("https://oc.proxy/v1", entry["baseUrl"])
         assertEquals("openai-completions", entry["api"])
         assertEquals("\${${LlmProviderSupport.OPENCLAW_API_KEY_ENV}}", entry["apiKey"])
@@ -252,7 +254,7 @@ class AgentConfigInjectorTest {
         val models = MiniJson.parse(Files.readString(tempHome.resolve(".pi").resolve("agent").resolve("models.json"))) as List<*>
         assertEquals(1, models.size)
         val m = models[0] as Map<*, *>
-        assertEquals("yolo-p1", m["id"])
+        assertEquals(yoloId, m["id"])
         assertEquals("https://pi.proxy/v1", m["baseUrl"])
         assertEquals("openai-completions", m["api"])
         assertEquals("\${${LlmProviderSupport.PI_API_KEY_ENV}}", m["apiKey"])
@@ -264,7 +266,7 @@ class AgentConfigInjectorTest {
         AgentConfigInjector.applyConfig(p, "continue")
         val text = Files.readString(tempHome.resolve(".continue").resolve("config.yaml"))
         assertTrue(text.contains("models:"))
-        assertTrue(text.contains("yoloId: \"yolo-p1\""))
+        assertTrue(text.contains("yoloId: \"$yoloId\""))
         assertTrue(text.contains("apiBase: \"https://cont.proxy/v1\""))
         assertTrue(text.contains("apiKey: \"\${{ secrets.${LlmProviderSupport.CONTINUE_API_KEY_ENV} }}\""))
     }
@@ -274,23 +276,23 @@ class AgentConfigInjectorTest {
         // kimi
         val kimiFile = tempHome.resolve(".kimi").resolve("config.toml")
         Files.createDirectories(kimiFile.parent)
-        Files.writeString(kimiFile, "[providers.yolo-p1]\nbase_url = \"x\"\n[models.yolo-p1]\nmodel = \"m\"\n")
+        Files.writeString(kimiFile, "[providers.$yoloId]\nbase_url = \"x\"\n[models.$yoloId]\nmodel = \"m\"\n")
         AgentConfigInjector.removeAll("kimi")
-        assertFalse(Files.readString(kimiFile).contains("yolo-p1"))
+        assertFalse(Files.readString(kimiFile).contains(yoloId))
 
         // openclaw
         val ocFile = tempHome.resolve(".openclaw").resolve("openclaw.json")
         Files.createDirectories(ocFile.parent)
-        Files.writeString(ocFile, MiniJson.stringify(linkedMapOf("models" to linkedMapOf("providers" to linkedMapOf("yolo-p1" to linkedMapOf("baseUrl" to "x"), "keep" to linkedMapOf("baseUrl" to "y"))))))
+        Files.writeString(ocFile, MiniJson.stringify(linkedMapOf("models" to linkedMapOf("providers" to linkedMapOf(yoloId to linkedMapOf("baseUrl" to "x"), "keep" to linkedMapOf("baseUrl" to "y"))))))
         AgentConfigInjector.removeAll("openclaw")
         val oc = MiniJson.parse(Files.readString(ocFile)) as Map<*, *>
         assertTrue((oc["models"] as Map<*, *>)["providers"].let { it as Map<*, *> }.containsKey("keep"))
-        assertFalse((oc["models"] as Map<*, *>)["providers"].let { it as Map<*, *> }.containsKey("yolo-p1"))
+        assertFalse((oc["models"] as Map<*, *>)["providers"].let { it as Map<*, *> }.containsKey(yoloId))
 
         // pi
         val piFile = tempHome.resolve(".pi").resolve("agent").resolve("models.json")
         Files.createDirectories(piFile.parent)
-        Files.writeString(piFile, MiniJson.stringify(listOf(linkedMapOf("id" to "yolo-p1"), linkedMapOf("id" to "keep"))))
+        Files.writeString(piFile, MiniJson.stringify(listOf(linkedMapOf("id" to yoloId), linkedMapOf("id" to "keep"))))
         AgentConfigInjector.removeAll("pi")
         val pis = MiniJson.parse(Files.readString(piFile)) as List<*>
         assertEquals(1, pis.size)
@@ -299,9 +301,9 @@ class AgentConfigInjectorTest {
         // continue
         val contFile = tempHome.resolve(".continue").resolve("config.yaml")
         Files.createDirectories(contFile.parent)
-        Files.writeString(contFile, "models:\n- yoloId: \"yolo-p1\"\n  name: a\n- yoloId: \"keep\"\n  name: b\n")
+        Files.writeString(contFile, "models:\n- yoloId: \"$yoloId\"\n  name: a\n- yoloId: \"keep\"\n  name: b\n")
         AgentConfigInjector.removeAll("continue")
         assertTrue(Files.readString(contFile).contains("keep"))
-        assertFalse(Files.readString(contFile).contains("yolo-p1"))
+        assertFalse(Files.readString(contFile).contains(yoloId))
     }
 }

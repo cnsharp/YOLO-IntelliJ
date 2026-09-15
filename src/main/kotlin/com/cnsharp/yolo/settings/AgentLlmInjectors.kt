@@ -58,7 +58,11 @@ object LlmInjectorRegistry {
 // Shared helpers (top-level, used by both env and config injectors)
 // =====================================================================================
 
-fun llmConfigProviderId(provider: LlmProvider): String = "yolo-" + provider.id
+/** Prefix for every provider id YOLO writes into agent config files. Lets us upsert/remove our
+ *  entries safely without disturbing user-managed ones (see each [AgentLlmInjector]). */
+const val YOLO_PROVIDER_ID_PREFIX = "yolo-"
+
+fun llmConfigProviderId(provider: LlmProvider): String = YOLO_PROVIDER_ID_PREFIX + provider.id
 
 fun llmFamilyToVendor(family: ProviderFamily): String = when (family) {
     ProviderFamily.ANTHROPIC -> "Anthropic"
@@ -371,7 +375,7 @@ object CodeBuddyInjector : ConfigInjector("codebuddy",
         val file = path(home)
         val root = readJsonObject(file) ?: return
         val models = (root["models"] as? List<*>)?.filterIsInstance<Map<*, *>>()
-            ?.filter { (it["id"] as? String)?.startsWith("yolo-") != true } ?: return
+            ?.filter { (it["id"] as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true } ?: return
         if (models.size == (root["models"] as? List<*>)?.size) return
         writeJson(file, linkedMapOf("models" to models))
     }
@@ -403,7 +407,7 @@ object OpenCodeInjector : ConfigInjector("opencode",
         val providerMap = (root["provider"] as? Map<*, *>).let {
             linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if (v != null) put(k.toString(), v) } }
         }
-        providerMap.keys.filter { (it as? String)?.startsWith("yolo-") == true }.forEach { providerMap.remove(it) }
+        providerMap.keys.filter { it.startsWith(YOLO_PROVIDER_ID_PREFIX) }.forEach { providerMap.remove(it) }
         providerMap[id] = linkedMapOf("options" to opts)
         root["provider"] = providerMap
         modelValue(provider)?.let { root["model"] = it }
@@ -415,7 +419,7 @@ object OpenCodeInjector : ConfigInjector("opencode",
         val root = readJsonObject(file) ?: return
         val providerMap = (root["provider"] as? Map<*, *>) ?: return
         val filtered = linkedMapOf<String, Any>().apply {
-            providerMap.forEach { (k, v) -> if ((k as? String)?.startsWith("yolo-") != true) put(k.toString(), v as Any) }
+            providerMap.forEach { (k, v) -> if ((k as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true) put(k.toString(), v as Any) }
         }
         if (filtered.size == providerMap.size) return
         root["provider"] = filtered
@@ -447,7 +451,7 @@ object CodexInjector : ConfigInjector("codex",
         removeTomlTable(lines, "model_providers.$id")
         for (idx in lines.indices) {
             val t = lines[idx].trim()
-            if (t.startsWith("model_provider") && t.contains("yolo-")) lines[idx] = "model_provider = \"openai\""
+            if (t.startsWith("model_provider") && t.contains(YOLO_PROVIDER_ID_PREFIX)) lines[idx] = "model_provider = \"openai\""
         }
         lines.add("")
         lines.add("model_provider = \"$id\"")
@@ -464,10 +468,10 @@ object CodexInjector : ConfigInjector("codex",
         if (!file.exists()) return
         val lines = Files.readAllLines(file).toMutableList()
         val before = lines.size
-        removeTomlTable(lines, prefix = "model_providers.yolo-", prefixMatch = true)
+        removeTomlTable(lines, prefix = "model_providers." + YOLO_PROVIDER_ID_PREFIX, prefixMatch = true)
         for (idx in lines.indices) {
             val t = lines[idx].trim()
-            if (t.startsWith("model_provider") && t.contains("yolo-")) lines[idx] = "model_provider = \"openai\""
+            if (t.startsWith("model_provider") && t.contains(YOLO_PROVIDER_ID_PREFIX)) lines[idx] = "model_provider = \"openai\""
         }
         if (lines.size != before) Files.write(file, lines)
     }
@@ -504,7 +508,7 @@ object ClineInjector : ConfigInjector("cline",
         val providers = (root["providers"] as? Map<*, *>).let {
             linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if (v != null) put(k.toString(), v) } }
         }
-        providers.keys.filter { (it as? String)?.startsWith("yolo-") == true }.forEach { providers.remove(it) }
+        providers.keys.filter { it.startsWith(YOLO_PROVIDER_ID_PREFIX) }.forEach { providers.remove(it) }
         // Preserve a key the user set directly in this config (we don't manage it).
         (providers[id] as? Map<*, *>)?.get("apiKey")?.let { e["apiKey"] = it }
         providers[id] = e
@@ -517,7 +521,7 @@ object ClineInjector : ConfigInjector("cline",
         val root = readJsonObject(file) ?: return
         val providers = (root["providers"] as? Map<*, *>) ?: return
         val filtered = linkedMapOf<String, Any>().apply {
-            providers.forEach { (k, v) -> if ((k as? String)?.startsWith("yolo-") != true) put(k.toString(), v as Any) }
+            providers.forEach { (k, v) -> if ((k as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true) put(k.toString(), v as Any) }
         }
         if (filtered.size == providers.size) return
         root["providers"] = filtered
@@ -557,7 +561,7 @@ object KiloInjector : ConfigInjector("kilo",
             linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if (v != null) put(k.toString(), v) } }
         }
         val models = (oc["models"] as? Map<*, *>).let {
-            linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if ((k as? String)?.startsWith("yolo-") != true) put(k.toString(), v as Any) } }
+            linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if ((k as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true) put(k.toString(), v as Any) } }
         }
         me?.let { models[it.first] = it.second }
         oc["options"] = opts
@@ -572,7 +576,7 @@ object KiloInjector : ConfigInjector("kilo",
         val root = readJsoncObject(file) ?: return
         val providerMap = (root["provider"] as? Map<*, *>) ?: return
         val filtered = linkedMapOf<String, Any>().apply {
-            providerMap.forEach { (k, v) -> if ((k as? String)?.startsWith("yolo-") != true) put(k.toString(), v as Any) }
+            providerMap.forEach { (k, v) -> if ((k as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true) put(k.toString(), v as Any) }
         }
         if (filtered.size == providerMap.size) return
         root["provider"] = filtered
@@ -627,8 +631,8 @@ object KimiInjector : ConfigInjector("kimi",
         if (!file.exists()) return
         val lines = Files.readAllLines(file).toMutableList()
         val before = lines.size
-        removeTomlTable(lines, prefix = "providers.yolo-", prefixMatch = true)
-        removeTomlTable(lines, prefix = "models.yolo-", prefixMatch = true)
+        removeTomlTable(lines, prefix = "providers." + YOLO_PROVIDER_ID_PREFIX, prefixMatch = true)
+        removeTomlTable(lines, prefix = "models." + YOLO_PROVIDER_ID_PREFIX, prefixMatch = true)
         if (lines.size != before) Files.write(file, lines)
     }
 }
@@ -669,7 +673,7 @@ object OpenClawInjector : ConfigInjector("openclaw",
         val providers = (models["providers"] as? Map<*, *>).let {
             linkedMapOf<String, Any>().apply { it?.forEach { (k, v) -> if (v != null) put(k.toString(), v) } }
         }
-        providers.keys.filter { (it as? String)?.startsWith("yolo-") == true }.forEach { providers.remove(it) }
+        providers.keys.filter { it.startsWith(YOLO_PROVIDER_ID_PREFIX) }.forEach { providers.remove(it) }
         providers[id] = e
         models["providers"] = providers
         root["models"] = models
@@ -693,10 +697,13 @@ object OpenClawInjector : ConfigInjector("openclaw",
         val models = (root["models"] as? Map<*, *>) ?: return
         val providers = (models["providers"] as? Map<*, *>) ?: return
         val filtered = linkedMapOf<String, Any>().apply {
-            providers.forEach { (k, v) -> if ((k as? String)?.startsWith("yolo-") != true) put(k.toString(), v as Any) }
+            providers.forEach { (k, v) -> if ((k as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true) put(k.toString(), v as Any) }
         }
         if (filtered.size == providers.size) return
-        (models as MutableMap<String, Any>)["providers"] = filtered
+        root["models"] = linkedMapOf<String, Any>().apply {
+            models.forEach { (k, v) -> if (v != null) put(k.toString(), v) }
+            put("providers", filtered)
+        }
         writeJson(file, root)
     }
 }
@@ -741,7 +748,7 @@ object PiInjector : ConfigInjector("pi",
         val file = modelsPath(home)
         val list = readJsonArray(file) ?: return
         val filtered = list.filterIsInstance<Map<*, *>>()
-            .filter { (it["id"] as? String)?.startsWith("yolo-") != true }
+            .filter { (it["id"] as? String)?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true }
         if (filtered.size == list.size) return
         writeJson(file, filtered)
     }
@@ -792,7 +799,7 @@ object ContinueInjector : ConfigInjector("continue",
         if (!file.exists()) return
         val text = runCatching { Files.readString(file) }.getOrNull() ?: return
         val parsed = parseContinueModels(text)
-        val kept = parsed.items.filter { (it["yoloId"] as? String)?.startsWith("yolo-") != true }
+        val kept = parsed.items.filter { it["yoloId"]?.startsWith(YOLO_PROVIDER_ID_PREFIX) != true }
         if (kept.size == parsed.items.size) return
         writeYaml(file, parsed.header, kept)
     }

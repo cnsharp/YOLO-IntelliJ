@@ -39,12 +39,14 @@ data class LlmProvider(
 ) {
     companion object {
         private const val SERVICE_NAME = "YOLO LLM Provider"
+        /** Prefix for the PasswordSafe key under which each provider's real api key is stored. */
+        private const val API_KEY_REF_PREFIX = "yolo-llm-"
         private val RANDOM = java.security.SecureRandom()
 
         /** A fresh, unique key under which the real api key is stored in PasswordSafe. */
         fun newApiKeyRef(): String {
             val suffix = (0 until 8).map { RANDOM.nextInt(36).toString(36) }.joinToString("")
-            return "yolo-llm-${System.currentTimeMillis().toString(36)}-$suffix"
+            return "$API_KEY_REF_PREFIX${System.currentTimeMillis().toString(36)}-$suffix"
         }
 
         private fun attributes(ref: String) = CredentialAttributes(SERVICE_NAME, ref)
