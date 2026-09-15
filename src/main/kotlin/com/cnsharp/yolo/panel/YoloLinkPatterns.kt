@@ -97,19 +97,31 @@ internal val STACK_BARE_PATTERN: Pattern = Pattern.compile(
 )
 
 /**
+ * Names that are *only* ever dotfiles — never a trailing extension (`foo.gitignore` does not exist):
+ * `.gitignore`, `.dockerignore`, `.editorconfig`. [STACK_BARE_NAME_PATTERN] links the leading-dot form
+ * for these, but not for ordinary extensions, so a bare `.env`/`.json` is not linked while `foo.env` is.
+ */
+internal val DOTFILE_NAMES: String = listOf("gitignore", "dockerignore", "editorconfig").joinToString("|")
+
+/**
  * Bare file name with no line number, e.g. `plugin.xml`, `build.gradle.kts` — only the base name. The
  * extension must be a recognized programming extension so a dotted non-file (`pay.amount.mark`) is never
  * linked, and a trailing boundary is required so it does not grab the start of a longer path or a
  * `name:line` reference.
  *
- * The optional leading dot lets dotfiles link, e.g. `.gitignore`, `.editorconfig`, `.env` (their name
- * after the dot is in [PROGRAMMING_EXT]); without it a `[\w.\-]+\.ext` cannot match because there is no
- * character before the final dot. A bare `gitignore` (no dot) still does not match.
+ * A real base name is **required** before the extension: `[\w.\-]+\.` needs at least one name character
+ * before the dot, so a bare `.env` / `.json` — a lone extension the agent did not print as a file — is not
+ * linked; only a name-carrying `foo.env` / `index.js` is. The sole exception is a true dotfile whose name
+ * is never an extension ([DOTFILE_NAMES] — `.gitignore`, `.dockerignore`, `.editorconfig`), which links on
+ * its own. Requiring the name+dot also stops a lone word from being read as an extension: several
+ * extensions are single letters (`s` = assembly, `c`, `h`, `m`, `d`, `r`) or common English words (`go`,
+ * `log`, `env`), so otherwise a possessive/contraction (`web's`) or a phrase (`let's go`) would link the
+ * trailing `s`/`go`.
  *
  * **Groups:** 1 = file.
  */
 internal val STACK_BARE_NAME_PATTERN: Pattern = Pattern.compile(
-    """(?<![\\/\w.\-])(\.?(?:[\w.\-]+\.)?(?i:$PROGRAMMING_EXT))(?![\\/\w.:])"""
+    """(?<![\\/\w.\-])([\w.\-]+\.(?i:$PROGRAMMING_EXT)|\.(?:$DOTFILE_NAMES))(?![\\/\w.:])"""
 )
 
 /** Python traceback `File "path", line N` (double-quoted). **Groups:** 1 = file, 2 = line. */

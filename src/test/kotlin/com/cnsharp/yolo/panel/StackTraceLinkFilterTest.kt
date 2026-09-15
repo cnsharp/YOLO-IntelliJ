@@ -52,6 +52,35 @@ class StackTraceLinkFilterTest {
     }
 
     @Test
+    fun testPossessiveTrailingSNotLinkedAsBareExtension() {
+        // `s` is a recognized (assembly) extension, but the trailing `s` of a possessive/contraction has
+        // no dot, so it must not link (regression: `web's` linked the lone `s`).
+        assertTrue(linked("the web's page").isEmpty())
+        assertTrue(linked("it's fine").isEmpty())
+    }
+
+    @Test
+    fun testBareWordThatIsAnExtensionNotLinkedWithoutDot() {
+        // `go` is a Go source extension, but a standalone English word has no dot and must not link.
+        assertTrue(linked("let's go").isEmpty())
+    }
+
+    @Test
+    fun testDotfileAndDottedNameStillLink() {
+        // A required base name must not break true dotfiles or ordinary dotted names.
+        assertEquals(listOf(".gitignore"), linked("see .gitignore here"))
+        assertEquals(listOf("index.js"), linked("see index.js here"))
+        assertEquals(listOf("prod.env"), linked("see prod.env here"))
+    }
+
+    @Test
+    fun testBareExtensionWithoutBaseNameNotLinked() {
+        // A lone `.ext` (no file name) is not a file the agent printed; only a name-carrying `foo.ext` links.
+        assertTrue(linked("load .env now").isEmpty())
+        assertTrue(linked("read .json here").isEmpty())
+    }
+
+    @Test
     fun testStackTraceFrameStillLinks() {
         // A real stack-trace frame is not a truncation tail and must link.
         assertEquals(listOf("Bar.java:123"), linked("at com.foo.Bar.method(Bar.java:123)"))
