@@ -75,7 +75,28 @@ class FileLinkFilter(
                     if (combined.substring(matchEnd).isBlank()) wrapState?.pendingPath = rawC
                     continue
                 }
-                if (rawC.contains('…') || rawC.contains("...") || isTruncatedPath(combined, cm.end(1))) continue
+                if (rawC.contains('…') || rawC.contains("...") || isTruncatedPath(combined, cm.end(1))) {
+                    // Same placeholder fallback as the single-line path above, but mapped onto the
+                    // continuation line: link the final filename segment here. The filename may sit fully
+                    // on this line, or begin on the head (then only its tail, on this line, is linked).
+                    // Inline truncation leaves no valid filename, so nothing links.
+                    if (isPlaceholderTruncation(rawC)) {
+                        val name = lastFilenameSegment(rawC)
+                        if (name != null) {
+                            val nameStartInRaw = rawC.length - name.length
+                            val tailStart = leading + (nameStartInRaw - prefix.length).coerceAtLeast(0)
+                            val tailEnd = leading + (matchEnd - prefix.length)
+                            if (tailStart >= leading && tailEnd <= text.length && tailEnd > tailStart) {
+                                items.add(LinkResultItem(tailStart, tailEnd, yoloHyperlink(project) {
+                                    val file = resolve(name) ?: return@yoloHyperlink
+                                    val p = project ?: return@yoloHyperlink
+                                    openFileAt(p, file, null, null)
+                                }))
+                            }
+                        }
+                    }
+                    continue
+                }
                 val lineNum = cm.group(3)?.toIntOrNull()
                 val col = cm.group(5)?.toIntOrNull()
                 val fullPath = fileLinkTarget(rawC, cm.group(2))
@@ -167,28 +188,41 @@ class FileLinkFilter(
                     val lastSep = headRaw.lastIndexOfAny(charArrayOf('/', '\\'))
                     val lastSegment = if (lastSep >= 0) headRaw.substring(lastSep + 1) else headRaw
                     if (!lastSegment.contains('.')) {
+                        // Always store the fragment so the next line can reconstruct it — even when it is a
+                        // truncated path (`...`/`…`). But a truncated head can never resolve to a real file,
+                        // so don't paint a dead half-link on it: only link-complete wrapped heads are
+                        // highlighted here; the final filename is linked on the continuation line instead
+                        // (see the wrap-continuation block above).
                         wrapState.pendingPath = headRaw
-                        // Highlight the head row too, so a wrapped path is not left half-painted. The
-                        // fragment alone is not a real path yet, so the link opens whatever the next line
-                        // completes it to (recorded below); if nothing completes it, [resolve] finds no
-                        // file and the click simply does nothing.
-                        val link = yoloHyperlink(project) {
-                            val completed = wrapState.completedPaths[headRaw]
-                            val file = resolve(completed?.path ?: headRaw) ?: return@yoloHyperlink
-                            val p = project ?: return@yoloHyperlink
-                            openFileAt(p, file, completed?.line, completed?.column)
+                        if (!headRaw.contains("...") && !headRaw.contains('…')) {
+                            // Highlight the head row too, so a wrapped path is not left half-painted. The
+                            // fragment alone is not a real path yet, so the link opens whatever the next line
+                            // completes it to (recorded below); if nothing completes it, [resolve] finds no
+                            // file and the click simply does nothing.
+                            val link = yoloHyperlink(project) {
+                                val completed = wrapState.completedPaths[headRaw]
+                                val file = resolve(completed?.path ?: headRaw) ?: return@yoloHyperlink
+                                val p = project ?: return@yoloHyperlink
+                                openFileAt(p, file, completed?.line, completed?.column)
+                            }
+                            items.add(LinkResultItem(m.start(1), m.start(1) + headRaw.length, link))
                         }
-                        items.add(LinkResultItem(m.start(1), m.start(1) + headRaw.length, link))
                     }
                 }
             }
             continue
         }
-            // A `…`/`...` truncation marker means the path is incomplete — skip it so we never link a broken
-            // prefix (e.g. `/Users/me/Proj…name` or `/Users/me/Proj...name`). The ASCII-safe path class stops
-            // at `…`, so the marker lands *just after* the captured path (m.end(1)); check both inside and
-            // at the boundary.
-            if (raw.contains('…') || raw.contains("...") || isTruncatedPath(text, m.end(1))) continue
+            // A `…`/`...` truncation marker means the path is incomplete — most abbreviated paths are
+            // dropped (e.g. `Proj…name`, `com/cnshar…`, `Proj...name` — the marker abuts a word and
+            // truncates a *component*). But when the marker is a *standalone* path segment (`/.../`,
+            // `/…/`), agents mean "middle directories omitted" and the *final filename* after it is still
+            // a real, complete file — so we fall back to linking just that last segment
+            // (e.g. `libra-statis/.../listener/ChannelConfigSyncListener.java` → `ChannelConfigSyncListener.java`)
+            // instead of dropping the whole reference. See [lastFilenameSegment] / [isPlaceholderTruncation].
+            if (raw.contains('…') || raw.contains("...") || isTruncatedPath(text, m.end(1))) {
+                linkLastFilenameSegment(text, m.start(1), raw, items)
+                continue
+            }
             val line = m.group(3)?.toIntOrNull()
             val column = m.group(5)?.toIntOrNull()
             // group(1) already carries the full path *including* its extension; just hand it to [resolve].
@@ -224,6 +258,65 @@ class FileLinkFilter(
             candidates += File(root.path, raw)
         }
         return candidates.firstOrNull { it.isFile }
+    }
+
+    /**
+     * True when [raw] contains a truncation marker (`…` or `...`) that forms its OWN path segment — i.e. it
+     * is bounded by path separators (`/.../`, `/…/`) or a line boundary. Agents use such a placeholder to mean
+     * "middle directories omitted", leaving the final filename after it intact and linkable. An *inline*
+     * marker (`cnshar…`, `Proj...name`) abuts a word and truncates a *component*, so its tail is unreliable
+     * and must be dropped. Used by [linkLastFilenameSegment] to decide whether a truncated reference can still
+     * yield a usable last-segment filename.
+     */
+    private fun isPlaceholderTruncation(raw: String): Boolean {
+        for (marker in listOf("...", "…")) {
+            var i = raw.indexOf(marker)
+            while (i >= 0) {
+                val before = if (i == 0) '/' else raw[i - 1]
+                val after = if (i + marker.length >= raw.length) '/' else raw[i + marker.length]
+                if ((before == '/' || before == '\\') && (after == '/' || after == '\\')) return true
+                i = raw.indexOf(marker, i + marker.length)
+            }
+        }
+        return false
+    }
+
+    /**
+     * The final path segment of [raw] when it is a complete-looking file (a recognized programming extension
+     * or a true dotfile, per [STACK_BARE_NAME_PATTERN]), else null. A truncated directory fragment
+     * (`com/cnshar`), an inline-abbreviated tail (`Proj...name`), or a bare extension (`env`) all return null;
+     * `ChannelConfigSyncListener.java` / `.gitignore` return themselves. Used to fall back to linking just the
+     * filename when the path is a placeholder-truncated reference.
+     */
+    private fun lastFilenameSegment(raw: String): String? {
+        val lastSep = raw.lastIndexOfAny(charArrayOf('/', '\\'))
+        val name = if (lastSep >= 0) raw.substring(lastSep + 1) else raw
+        if (name.isEmpty()) return null
+        return if (STACK_BARE_NAME_PATTERN.matcher(name).matches()) name else null
+    }
+
+    /**
+     * When [raw] (a matched path that contains a `…`/`...` marker) is a placeholder truncation, link just its
+     * final filename segment [raw] within [text] (at offset [pathStart]). Inline truncations leave no valid
+     * filename, so nothing is added. The link resolves the bare filename — it is clickable even though the
+     * omitted middle directories mean [resolve] may only find the file when it sits at a content root.
+     */
+    private fun linkLastFilenameSegment(
+        text: String,
+        pathStart: Int,
+        raw: String,
+        items: MutableList<LinkResultItem>
+    ) {
+        if (!isPlaceholderTruncation(raw)) return
+        val name = lastFilenameSegment(raw) ?: return
+        val start = pathStart + (raw.length - name.length)
+        val end = pathStart + raw.length
+        if (start < 0 || end > text.length || start >= end) return
+        items.add(LinkResultItem(start, end, yoloHyperlink(project) {
+            val file = resolve(name) ?: return@yoloHyperlink
+            val p = project ?: return@yoloHyperlink
+            openFileAt(p, file, null, null)
+        }))
     }
 
     companion object {

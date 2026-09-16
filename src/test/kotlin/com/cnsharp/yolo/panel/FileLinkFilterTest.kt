@@ -352,4 +352,70 @@ class FileLinkFilterTest {
         // has no directory component. Verify FileLinkFilter produces nothing.
         assertTrue(result == null || result.items.isEmpty())
     }
+
+    // ---- Placeholder-truncated paths (`...`/`…` as a standalone segment) ----
+
+    private fun linkedBothLines(line1: String, line2: String): Pair<List<String>, List<String>> {
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = filter.apply(line1)
+            ?.items
+            ?.map { line1.substring(it.startOffset, it.endOffset) }
+            .orEmpty()
+        val tail = filter.apply(line2)
+            ?.items
+            ?.map { line2.substring(it.startOffset, it.endOffset) }
+            .orEmpty()
+        return head to tail
+    }
+
+    @Test
+    fun testPlaceholderTruncationLinksLastFilename() {
+        // A `...` segment means "middle directories omitted"; the final filename is intact and must link.
+        // Regression for `libra-statis/.../listener/ChannelConfigSyncListener.java` breaking at `Sync`.
+        assertEquals(
+            listOf("ChannelConfigSyncListener.java"),
+            linked("libra-statis/.../listener/ChannelConfigSyncListener.java")
+        )
+    }
+
+    @Test
+    fun testEllipsisPlaceholderNotLinkableByPathPattern() {
+        // The U+2026 form (`/…/`) is a placeholder too, but PATH_PATTERN's ASCII-safe path class
+        // *terminates* at `…` (by design, so CJK prose around a path never leaks in), so the reference
+        // is not even matched as one path — only the ASCII `...` form links the last filename. This pins
+        // that boundary: the `…` form must stay unlinked (the fragment before `…` is just a dir).
+        assertTrue(linked("libra-statis/…/listener/ChannelConfigSyncListener.java").isEmpty())
+    }
+
+    @Test
+    fun testInlineTruncationStillNotLinked() {
+        // An inline abbreviation truncates a *component*; its tail is unreliable, so nothing links.
+        // These must stay empty (existing behaviour — the tail is not a real file).
+        assertTrue(linked("/Users/me/Proj...name").isEmpty())
+        assertTrue(linked("src/main/kotlin/com/cnshar…/real/AgentExtenderConfigurable.kt").isEmpty())
+    }
+
+    @Test
+    fun testWrappedPlaceholderTruncationLinksFilenameOnContinuation() {
+        // The path wraps mid-filename AND contains a `...` placeholder: the head (`.../listener/ChannelConfigSync`)
+        // must NOT be a dead half-link, and the continuation (`Listener.java`) must carry the filename link.
+        val (head, tail) = linkedBothLines(
+            "libra-statis/.../listener/ChannelConfigSync",
+            "Listener.java"
+        )
+        assertTrue("truncated head must not be linked as a dead half-link", head.isEmpty())
+        assertEquals(listOf("Listener.java"), tail)
+    }
+
+    @Test
+    fun testWrappedPlaceholderTruncationFilenameNotSplit() {
+        // The `...` placeholder is in the middle but the whole filename lands on the continuation line.
+        val (head, tail) = linkedBothLines(
+            "libra-statis/.../listener",
+            "ChannelConfigSyncListener.java"
+        )
+        assertTrue("truncated head (directory fragment) must not be linked", head.isEmpty())
+        assertEquals(listOf("ChannelConfigSyncListener.java"), tail)
+    }
 }
