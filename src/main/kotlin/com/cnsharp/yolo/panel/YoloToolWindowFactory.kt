@@ -288,32 +288,50 @@ private class YoloPanel(
     private val scaleChangeListener = PropertyChangeListener { activeWidget()?.forceReinitFull() }
 
     /**
-     * Intercepts Ctrl+C while the embedded terminal has focus so the keystroke reaches the PTY as SIGINT
-     * (the terminal convention) instead of being swallowed by IDEA's global Copy shortcut.
+     * Intercepts a small set of keystrokes while the embedded terminal has focus and delivers them straight
+     * to JediTerm, so they reach the PTY / the agent's own TUI instead of being swallowed by IDEA's global
+     * shortcuts:
+     *   - Ctrl+C  → SIGINT (or Copy, when there is a selection)
+     *   - Ctrl+T  → show / toggle the agent's todo list
+     *   - Esc     → interrupt / cancel the agent's current action
+     *
+     * Keys that don't collide with an IDEA shortcut (e.g. Ctrl+O) reach the terminal on their own and are
+     * deliberately left out of this list — the dispatcher exists only to win back keys IDEA would otherwise
+     * swallow.
      *
      * This MUST run ahead of IDEA's own keystroke processing. A plain [java.awt.Toolkit] AWT listener does
      * NOT work: IDEA's [com.intellij.ide.IdeEventQueue] processes shortcuts at the head of the event queue,
      * before Toolkit listeners fire, so the "Shortcuts conflicts" dialog would already be on screen by the
      * time a Toolkit listener could consume the event. Registering an [com.intellij.ide.IdeEventQueue.EventDispatcher]
      * instead lets us intercept the event first and return `true` to stop IDEA from ever treating it as a
-     * shortcut — no conflict dialog, no Copy action. We then deliver the key straight to JediTerm, which
-     * applies its own selection-aware rule (copy when there is a selection, otherwise SIGINT).
+     * shortcut — no conflict dialog. We then deliver the key straight to JediTerm, which applies its own
+     * selection-aware / agent-defined behavior.
      *
      * Only the real terminal panel is affected — the dropdown, toolbar and the rest of the IDE keep their
-     * normal Ctrl+C behavior. ⌘C (macOS Copy) is left untouched because we require a plain Ctrl modifier.
+     * normal behavior. ⌘-based shortcuts are left untouched because the specs below require a plain Ctrl
+     * modifier (or no modifier, for Esc).
      */
     // Implement the base `IdeEventQueue.EventDispatcher` (not `NonLockedEventDispatcher`): the latter was
     // introduced after our since-build 233, so the plugin verifier reports it as an unresolved class on
     // 2023.3. The base interface has existed since long before 233 and exposes the same `dispatch` hook.
     // The only behavioural difference is that `NonLockedEventDispatcher` skips invocation while the event
-    // queue is locked (modal dialogs / write actions); for Ctrl+C key interception that's irrelevant.
-    private val ctrlCDispatcher = object : IdeEventQueue.EventDispatcher {
+    // queue is locked (modal dialogs / write actions); for terminal key interception that's irrelevant.
+    private data class TerminalKeySpec(val modifiersEx: Int, val keyCode: Int, val keyChar: Char)
+
+    private val terminalKeySpecs = listOf(
+        TerminalKeySpec(InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_C, 'c'),
+        TerminalKeySpec(InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_T, 't'),
+        TerminalKeySpec(0, KeyEvent.VK_ESCAPE, KeyEvent.VK_ESCAPE.toChar())
+    )
+
+    private val terminalKeyDispatcher = object : IdeEventQueue.EventDispatcher {
         override fun dispatch(e: AWTEvent): Boolean {
             if (e !is KeyEvent || e.id != KeyEvent.KEY_PRESSED) return false
-            // Plain Ctrl+C only — no Shift/Alt/Meta. Meta (⌘) is left to IDEA's Copy on macOS.
+            // Bare keystroke only — no Shift/Alt/Meta beyond what the spec itself requires.
             val mods = e.modifiersEx and
                 (InputEvent.CTRL_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK or InputEvent.ALT_DOWN_MASK or InputEvent.META_DOWN_MASK)
-            if (mods != InputEvent.CTRL_DOWN_MASK || e.keyCode != KeyEvent.VK_C) return false
+            val spec = terminalKeySpecs.firstOrNull { it.modifiersEx == mods && it.keyCode == e.keyCode }
+                ?: return false
 
             val panel = activeWidget()?.getTerminalPanel() ?: return false
             val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
@@ -323,7 +341,7 @@ private class YoloPanel(
             e.consume()
             val forward = KeyEvent(
                 panel, KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
-                InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_C, 'c'
+                spec.modifiersEx, spec.keyCode, spec.keyChar
             )
             panel.processKeyEvent(forward)
             return true
@@ -371,10 +389,11 @@ private class YoloPanel(
         // Track OS display-scale changes so the embedded terminal can recompute (see scaleChangeListener).
         Toolkit.getDefaultToolkit().addPropertyChangeListener("awt.font.desktophints", scaleChangeListener)
 
-        // Keep Ctrl+C for the embedded terminal (SIGINT) instead of IDEA's Copy — see ctrlCDispatcher.
-        // A Dispatcher intercepts the keystroke at the head of IDEA's event queue, ahead of its shortcut
-        // processing, which a Toolkit AWT listener cannot do (the conflict dialog would already be shown).
-        IdeEventQueue.getInstance().addDispatcher(ctrlCDispatcher, this)
+        // Keep Ctrl+C / Ctrl+T / Esc for the embedded terminal instead of letting IDEA swallow them —
+        // see terminalKeyDispatcher. A Dispatcher intercepts the keystroke at the head of IDEA's event
+        // queue, ahead of its shortcut processing, which a Toolkit AWT listener cannot do (the conflict
+        // dialog would already be shown).
+        IdeEventQueue.getInstance().addDispatcher(terminalKeyDispatcher, this)
 
         // Refresh the dropdown when the user applies changes in Settings | Tools | YOLO (e.g. base-args edits),
         // so an already-open panel picks up the new values instead of keeping its initial rows.
@@ -898,7 +917,7 @@ private class YoloPanel(
     }
 
     override fun dispose() {
-        IdeEventQueue.getInstance().removeDispatcher(ctrlCDispatcher)
+        IdeEventQueue.getInstance().removeDispatcher(terminalKeyDispatcher)
         Toolkit.getDefaultToolkit().removePropertyChangeListener("awt.font.desktophints", scaleChangeListener)
         sessions.forEach { session ->
             runCatching { session.widget.close() }
