@@ -206,8 +206,8 @@ class AgentExtenderConfigurable : Configurable {
      *  installed and proxy-able (reads a custom LLM backend via env). See LlmProviderSupport. */
     private lateinit var providersButton: JButton
     private fun providersButton(): JComponent {
-        val button = JButton("Providers…")
-        button.toolTipText = "为所选 agent 配置自定义 LLM Provider"
+        val button = JButton(message("button.providers"))
+        button.toolTipText = message("button.providers.tooltip")
         button.addActionListener {
             val row = toolsTable.selectedRow
             if (row < 0) {
@@ -234,9 +234,9 @@ class AgentExtenderConfigurable : Configurable {
         }
         providersButton.isEnabled = enabled
         providersButton.toolTipText = if (enabled) {
-            "为所选 agent 配置自定义 LLM Provider"
+            message("button.providers.tooltip")
         } else {
-            "该 agent 未安装或不支持自定义 LLM"
+            message("button.providers.tooltip.disabled")
         }
     }
 
