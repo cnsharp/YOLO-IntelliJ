@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindowType
@@ -44,9 +45,12 @@ import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
 import com.pty4j.WinSize
 import java.awt.*
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.Transferable
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import java.beans.PropertyChangeListener
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicInteger
 import javax.swing.*
@@ -683,6 +687,7 @@ private class YoloPanel(
                         // http(s):// URLs → system browser (does not hide the pane).
                         widget.addHyperlinkFilter(InputAwareLinkFilter(UrlLinkFilter(), typedInput))
                         widget.setTtyConnector(connector)
+                        installFileDrop(widget)
                         // Warm the project-type cache off the terminal thread so the first streamed line
                         // doesn't stall while the snapshot is built.
                         if (!DumbService.isDumb(project)) {
@@ -737,6 +742,77 @@ private class YoloPanel(
         contentArea.revalidate()
         SwingUtilities.invokeLater { widget.getTerminalPanel().requestFocusInWindow() }
     }
+
+    /**
+     * Enables dragging files (from the OS file manager or the IDE's Project view) onto the terminal: their
+     * paths are typed into the agent's input line. The path string is fed straight to the PTY through the
+     * terminal's TTY connector — the exact same path every keystroke takes — so the agent sees precisely
+     * what a user would have typed. Any pre-existing [TransferHandler] (e.g. JediTerm's paste) is preserved
+     * by delegating non-file flavors to it.
+     */
+    private fun installFileDrop(widget: YoloJediTermWidget) {
+        val delegate = widget.transferHandler
+        widget.transferHandler = object : TransferHandler() {
+            override fun canImport(support: TransferHandler.TransferSupport): Boolean =
+                support.isDataFlavorSupported(DataFlavor.javaFileListFlavor) ||
+                    virtualFileFlavor(support.transferable) != null ||
+                    (delegate?.canImport(support) ?: false)
+
+            override fun importData(support: TransferHandler.TransferSupport): Boolean {
+                if (support.isDataFlavorSupported(DataFlavor.javaFileListFlavor) ||
+                    virtualFileFlavor(support.transferable) != null
+                ) {
+                    val text = extractDroppedPaths(support.transferable)
+                        .takeIf { it.isNotEmpty() }
+                        ?.joinToString(" ") { quotePath(it) }
+                    if (text != null) {
+                        runCatching { widget.ttyConnector?.write(text) }
+                            .onFailure { LOG.warn("${Yolo.NAME}: failed to insert dropped file path", it) }
+                    }
+                    return true
+                }
+                return delegate?.importData(support) ?: false
+            }
+        }
+    }
+
+    /**
+     * The IDE's Project-view drag advertises a `VirtualFile` (array) flavor. Its holder class
+     * (`com.intellij.ide.DataFlavors`) is not on the plugin's compile classpath, so we match the flavor by
+     * its representation class instead of referencing the constant.
+     */
+    private fun virtualFileFlavor(transferable: Transferable): DataFlavor? =
+        transferable.transferDataFlavors.firstOrNull { flavor ->
+            val rc = runCatching { flavor.representationClass }.getOrNull()
+            rc == VirtualFile::class.java || rc == Array<VirtualFile>::class.java
+        }
+
+    /** Pull file paths from a drop, accepting both OS file drags and IDE-internal VirtualFile drags. */
+    private fun extractDroppedPaths(transferable: Transferable): List<String> {
+        runCatching {
+            (transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
+                ?.filterIsInstance<File>()?.map { it.absolutePath }
+        }.getOrNull()?.let { if (it.isNotEmpty()) return it }
+
+        virtualFileFlavor(transferable)?.let { flavor ->
+            runCatching { transferable.getTransferData(flavor) }
+                .getOrNull()
+                ?.let { data ->
+                    val paths = when (data) {
+                        is Array<*> -> data.filterIsInstance<VirtualFile>().map { it.path }
+                        is List<*> -> data.filterIsInstance<VirtualFile>().map { it.path }
+                        else -> emptyList()
+                    }
+                    if (paths.isNotEmpty()) return paths
+                }
+        }
+
+        return emptyList()
+    }
+
+    /** Quote a path that contains whitespace so the agent's input treats it as one argument. */
+    private fun quotePath(path: String): String =
+        if (path.any { it.isWhitespace() }) "\"$path\"" else path
 
     /** Repaint every tab header so the selected one is highlighted and the rest are flat. */
     private fun updateTabSelection() {
