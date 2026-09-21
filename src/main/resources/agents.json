@@ -6,7 +6,12 @@
     "skipFlag": "--dangerously-skip-permissions",
     "resumeFlag": "-r",
     "icon": "/icons/agents/claude.svg",
-    "url": "https://claude.ai/"
+    "url": "https://claude.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://claude.ai/install.sh | bash",
+      "cmdWin": "irm https://claude.ai/install.ps1 | iex"
+    }
   },
   {
     "id": "codex",
@@ -15,16 +20,26 @@
     "skipFlag": "--yolo",
     "resumeFlag": "resume --last",
     "icon": "/icons/agents/codex.svg",
-    "url": "https://openai.com/codex"
+    "url": "https://openai.com/codex",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
+      "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\""
+    }
   },
   {
     "id": "cursor",
     "displayName": "Cursor",
-    "command": "cursor-agent",
+    "command": "agent",
     "skipFlag": "--force",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/cursor.svg",
-    "url": "https://cursor.com/"
+    "url": "https://cursor.com/cli",
+    "install": {
+      "type": "shell",
+      "cmd": "curl https://cursor.com/install -fsS | bash",
+      "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex"
+    }
   },
   {
     "id": "copilot",
@@ -33,7 +48,12 @@
     "skipFlag": "--allow-all",
     "resumeFlag": "-r",
     "icon": "/icons/agents/copilot.svg",
-    "url": "https://github.com/features/copilot"
+    "url": "https://github.com/features/copilot",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://gh.io/copilot-install | bash",
+      "cmdWin": "winget install GitHub.Copilot"
+    }
   },
   {
     "id": "opencode",
@@ -42,7 +62,12 @@
     "skipFlag": "--auto",
     "resumeFlag": "",
     "icon": "/icons/agents/opencode.svg",
-    "url": "https://opencode.ai/"
+    "url": "https://opencode.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://opencode.ai/install | bash",
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\""
+    }
   },
   {
     "id": "aider",
@@ -51,7 +76,11 @@
     "skipFlag": "--yes",
     "resumeFlag": "",
     "icon": "/icons/agents/aider.svg",
-    "url": "https://aider.chat/"
+    "url": "https://aider.chat/",
+    "install": {
+      "type": "pip",
+      "pkg": "aider-chat"
+    }
   },
   {
     "id": "cline",
@@ -60,7 +89,11 @@
     "skipFlag": "--auto-approve true",
     "resumeFlag": "--taskId",
     "icon": "/icons/agents/cline.svg",
-    "url": "https://cline.bot/"
+    "url": "https://cline.bot/",
+    "install": {
+      "type": "npm",
+      "pkg": "cline"
+    }
   },
   {
     "id": "continue",
@@ -69,7 +102,12 @@
     "skipFlag": "--auto",
     "resumeFlag": "",
     "icon": "/icons/agents/continue.svg",
-    "url": "https://continue.dev/"
+    "url": "https://continue.dev/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.sh | bash",
+      "cmdWin": "irm https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.ps1 | iex"
+    }
   },
   {
     "id": "openclaw",
@@ -78,7 +116,12 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "/icons/agents/openclaw.svg",
-    "url": "https://openclaw.ai/"
+    "url": "https://openclaw.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://openclaw.ai/install.sh | bash",
+      "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex"
+    }
   },
   {
     "id": "kiro",
@@ -87,7 +130,12 @@
     "skipFlag": "--trust-all-tools",
     "resumeFlag": "",
     "icon": "/icons/agents/kiro.svg",
-    "url": "https://kiro.dev/"
+    "url": "https://kiro.dev/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
+      "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex"
+    }
   },
   {
     "id": "goose",
@@ -100,7 +148,11 @@
       "value": "auto"
     },
     "icon": "/icons/agents/goose.svg",
-    "url": "https://block.github.io/goose/"
+    "url": "https://block.github.io/goose/",
+    "install": {
+      "type": "brew",
+      "pkg": "block-goose-cli"
+    }
   },
   {
     "id": "crush",
@@ -109,7 +161,11 @@
     "skipFlag": "--yolo",
     "resumeFlag": "",
     "icon": "/icons/agents/crush.png",
-    "url": "https://charm.sh/crush"
+    "url": "https://charm.sh/crush",
+    "install": {
+      "type": "npm",
+      "pkg": "@charmland/crush"
+    }
   },
   {
     "id": "amp",
@@ -118,7 +174,12 @@
     "skipFlag": "--dangerously-allow-all",
     "resumeFlag": "",
     "icon": "/icons/agents/amp.svg",
-    "url": "https://ampcode.com/"
+    "url": "https://ampcode.com/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://ampcode.com/install.sh | bash",
+      "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\""
+    }
   },
   {
     "id": "kimi",
@@ -127,7 +188,11 @@
     "skipFlag": "--yolo",
     "resumeFlag": "-r",
     "icon": "/icons/agents/kimi.svg",
-    "url": "https://kimi.moonshot.cn/"
+    "url": "https://kimi.moonshot.cn/",
+    "install": {
+      "type": "npm",
+      "pkg": "@moonshot-ai/kimi-code"
+    }
   },
   {
     "id": "qwen-code",
@@ -136,7 +201,11 @@
     "skipFlag": "--approval-mode yolo",
     "resumeFlag": "",
     "icon": "/icons/agents/qwen-code.png",
-    "url": "https://qwen.ai/qwencode"
+    "url": "https://qwen.ai/qwencode",
+    "install": {
+      "type": "npm",
+      "pkg": "@qwen-code/qwen-code"
+    }
   },
   {
     "id": "trae",
@@ -145,7 +214,12 @@
     "skipFlag": "",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/trae.svg",
-    "url": "https://www.trae.ai/"
+    "url": "https://www.trae.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "sh -c \"$(curl -L https://trae.cn/trae-cli/install.sh)\"",
+      "cmdWin": "irm https://trae.cn/trae-cli/install.ps1 | iex"
+    }
   },
   {
     "id": "codebuddy",
@@ -154,7 +228,11 @@
     "skipFlag": "-y",
     "resumeFlag": "-r",
     "icon": "/icons/agents/codebuddy.svg",
-    "url": "https://www.codebuddy.ai/"
+    "url": "https://www.codebuddy.ai/",
+    "install": {
+      "type": "npm",
+      "pkg": "@tencent-ai/codebuddy-code"
+    }
   },
   {
     "id": "qoder",
@@ -163,7 +241,11 @@
     "skipFlag": "--dangerously-skip-permissions",
     "resumeFlag": "",
     "icon": "/icons/agents/qoder.svg",
-    "url": "https://qoder.com/"
+    "url": "https://qoder.com/",
+    "install": {
+      "type": "npm",
+      "pkg": "@qoder-ai/qodercli"
+    }
   },
   {
     "id": "devin",
@@ -172,7 +254,12 @@
     "skipFlag": "--permission-mode bypass",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/devin.svg",
-    "url": "https://devin.ai/"
+    "url": "https://devin.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://cli.devin.ai/install.sh | bash",
+      "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex"
+    }
   },
   {
     "id": "grok",
@@ -181,7 +268,11 @@
     "skipFlag": "--permission-mode bypassPermissions",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/grok.svg",
-    "url": "https://grok.com/"
+    "url": "https://grok.com/",
+    "install": {
+      "type": "npm",
+      "pkg": "@xai-official/grok"
+    }
   },
   {
     "id": "antigravity",
@@ -190,7 +281,12 @@
     "skipFlag": "--dangerously-skip-permissions",
     "resumeFlag": "--conversation",
     "icon": "/icons/agents/antigravity.png",
-    "url": "https://antigravity.google/"
+    "url": "https://antigravity.google/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+      "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex"
+    }
   },
   {
     "id": "mistral-vibe",
@@ -199,7 +295,11 @@
     "skipFlag": "--agent auto-approve",
     "resumeFlag": "",
     "icon": "/icons/agents/mistral-vibe.svg",
-    "url": "https://mistral.ai/"
+    "url": "https://mistral.ai/",
+    "install": {
+      "type": "pip",
+      "pkg": "mistral-vibe"
+    }
   },
   {
     "id": "kilo",
@@ -208,7 +308,11 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "/icons/agents/kilo.svg",
-    "url": "https://kilocode.ai/"
+    "url": "https://kilocode.ai/",
+    "install": {
+      "type": "npm",
+      "pkg": "@kilocode/cli"
+    }
   },
   {
     "id": "hermes",
@@ -217,7 +321,12 @@
     "skipFlag": "--yolo",
     "resumeFlag": "-r",
     "icon": "/icons/agents/hermes.png",
-    "url": "https://hermes-agent.nousresearch.com/"
+    "url": "https://hermes-agent.nousresearch.com/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+      "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+    }
   },
   {
     "id": "pi",
@@ -226,7 +335,11 @@
     "skipFlag": "--approve",
     "resumeFlag": "-r",
     "icon": "/icons/agents/pi.svg",
-    "url": "https://pi.dev/"
+    "url": "https://pi.dev/",
+    "install": {
+      "type": "npm",
+      "pkg": "@earendil-works/pi-coding-agent"
+    }
   },
   {
     "id": "droid",
@@ -235,7 +348,12 @@
     "skipFlag": "--auto high",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/droid.svg",
-    "url": "https://factory.ai/"
+    "url": "https://factory.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://app.factory.ai/cli | sh",
+      "cmdWin": "irm https://app.factory.ai/cli/windows | iex"
+    }
   },
   {
     "id": "aug",
@@ -244,7 +362,11 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "/icons/agents/aug.svg",
-    "url": "https://augmentcode.com/"
+    "url": "https://augmentcode.com/",
+    "install": {
+      "type": "npm",
+      "pkg": "@augmentcode/auggie"
+    }
   },
   {
     "id": "rovo",
@@ -253,7 +375,11 @@
     "skipFlag": "--yolo",
     "resumeFlag": "",
     "icon": "/icons/agents/rovo.svg",
-    "url": "https://rovo.atlassian.com/"
+    "url": "https://rovo.atlassian.com/",
+    "install": {
+      "type": "url",
+      "url": "https://rovo.atlassian.com/"
+    }
   },
   {
     "id": "prime-agent",
@@ -262,7 +388,12 @@
     "skipFlag": "",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/prime-agent.png",
-    "url": "https://www.primeintellect.ai/"
+    "url": "https://www.primeintellect.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh",
+      "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\""
+    }
   },
   {
     "id": "autohand",
@@ -271,7 +402,11 @@
     "skipFlag": "--unrestricted",
     "resumeFlag": "",
     "icon": "/icons/agents/autohand.svg",
-    "url": "https://autohand.ai/"
+    "url": "https://autohand.ai/",
+    "install": {
+      "type": "npm",
+      "pkg": "autohand-cli"
+    }
   },
   {
     "id": "command-code",
@@ -280,7 +415,11 @@
     "skipFlag": "--yolo",
     "resumeFlag": "",
     "icon": "/icons/agents/command-code.svg",
-    "url": "https://commandcode.ai/"
+    "url": "https://commandcode.ai/",
+    "install": {
+      "type": "npm",
+      "pkg": "command-code"
+    }
   },
   {
     "id": "ante",
@@ -289,7 +428,12 @@
     "skipFlag": "--yolo",
     "resumeFlag": "",
     "icon": "/icons/agents/ante.svg",
-    "url": "https://antigma.ai/"
+    "url": "https://antigma.ai/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://ante.run/install.sh | bash",
+      "cmdWin": "irm https://ante.run/install.ps1 | iex"
+    }
   },
   {
     "id": "codebuff",
@@ -298,7 +442,11 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "/icons/agents/codebuff.png",
-    "url": "https://codebuff.com/"
+    "url": "https://codebuff.com/",
+    "install": {
+      "type": "npm",
+      "pkg": "codebuff"
+    }
   },
   {
     "id": "omp",
@@ -307,6 +455,11 @@
     "skipFlag": "",
     "resumeFlag": "--resume",
     "icon": "/icons/agents/omp.svg",
-    "url": "https://ohmyposh.dev/"
+    "url": "https://ohmyposh.dev/",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -s https://ohmyposh.dev/install.sh | bash -s",
+      "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget"
+    }
   }
 ]

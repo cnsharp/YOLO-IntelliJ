@@ -9,8 +9,10 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.JBColor
@@ -129,6 +131,7 @@ class AgentExtenderConfigurable : Configurable {
         toolsTable.selectionModel.addListSelectionListener { e ->
             if (e.valueIsAdjusting) return@addListSelectionListener
             updateProvidersButtonState()
+            updateInstallButtonState()
         }
 
         val titleWithHelp = JPanel(HorizontalLayout(4)).apply {
@@ -140,10 +143,12 @@ class AgentExtenderConfigurable : Configurable {
             add(addToolButton())
             add(removeToolButton())
             add(validateButton())
+            add(installButton())
             add(providersButton())
         }
         // Initialize the Providers button's enabled state now that it has been created.
         updateProvidersButtonState()
+        updateInstallButtonState()
 
         panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(titleWithHelp, JBScrollPane(toolsTable), true)
@@ -205,6 +210,11 @@ class AgentExtenderConfigurable : Configurable {
     /** "Providers…" opens the per-agent LLM provider dialog (2.0). Enabled only for an agent that is both
      *  installed and proxy-able (reads a custom LLM backend via env). See LlmProviderSupport. */
     private lateinit var providersButton: JButton
+    /** "Install": installs the selected agent via its declared method (npm/pip/brew/shell). Disabled by default
+     *  and only enabled for a selected row whose agent declares an automatable install spec and is not installed.
+     *  Agents whose spec is type "url" (no package manager) keep the button enabled to open their download page. */
+    private lateinit var installButton: JButton
+    private var installing = false
     private fun providersButton(): JComponent {
         val button = JButton(message("button.providers"))
         button.toolTipText = message("button.providers.tooltip")
@@ -237,6 +247,137 @@ class AgentExtenderConfigurable : Configurable {
             message("button.providers.tooltip")
         } else {
             message("button.providers.tooltip.disabled")
+        }
+    }
+
+    /** Resolve the selected row's install spec (by command first, then by id). */
+    private fun installSpecForRow(row: Int): InstallSpec? {
+        if (row < 0) return null
+        val id = (toolsModel.getValueAt(row, COL_ID) as? String)?.trim() ?: ""
+        val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
+        return AgentRegistry.installFor(command) ?: AgentRegistry.installFor(id)
+    }
+
+    /** Install button: disabled by default; lights up for a selected row that declares an install spec.
+     *  For automatable specs (npm/pip/brew/shell) it is disabled once the agent is already installed. */
+    private fun installButton(): JComponent {
+        val button = JButton(message("button.install"))
+        button.toolTipText = message("button.install.tooltip")
+        button.isEnabled = false
+        button.addActionListener {
+            val row = toolsTable.selectedRow
+            if (row < 0) return@addActionListener
+            val spec = installSpecForRow(row) ?: return@addActionListener
+            val id = (toolsModel.getValueAt(row, COL_ID) as? String)?.trim() ?: ""
+            val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
+            val display = (toolsModel.getValueAt(row, COL_DISPLAY) as? String)?.trim()?.ifBlank { id } ?: id
+            if (spec.type == "url") {
+                // No package manager: open the agent's download page instead of running a command.
+                if (spec.url.isNotBlank()) BrowserUtil.browse(spec.url)
+                setStatus(message("status.install.opened", display), warn = false)
+                return@addActionListener
+            }
+            if (!spec.automatable || spec.target.isBlank()) return@addActionListener
+            runInstall(spec, command, display)
+        }
+        installButton = button
+        return button
+    }
+
+    /** Reflect the selected row's install spec + installed status into the Install button's enabled state. */
+    private fun updateInstallButtonState() {
+        val row = toolsTable.selectedRow
+        val enabled = if (row < 0) false else {
+            val spec = installSpecForRow(row)
+            if (spec == null) {
+                false
+            } else if (spec.type == "url") {
+                spec.url.isNotBlank()
+            } else {
+                val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
+                val installed = command.isNotBlank() && command.lowercase() in InstalledAgents.installed()
+                spec.automatable && spec.target.isNotBlank() && !installed
+            }
+        }
+        installButton.isEnabled = enabled && !installing
+    }
+
+    /** Run the agent's install command on a background thread, stream its output to the status line, then
+     *  verify the agent's launch command is actually runnable and refresh the installed flags + the live
+     *  terminal dropdown so the row/icon lights up (and the Install button re-disables). */
+    private fun runInstall(spec: InstallSpec, command: String, display: String) {
+        if (installing) return
+        installing = true
+        installButton.isEnabled = false
+        setStatus(message("status.installing", display, spec.target), warn = false)
+        val app = ApplicationManager.getApplication()
+        app.executeOnPooledThread {
+            val (ok, lastLine) = runInstallCommand(installShellCommand(spec))
+            app.invokeLater {
+                installing = false
+                if (!ok) {
+                    setStatus(message("status.install.failed", display, lastLine), warn = true)
+                    updateInstallButtonState()
+                    return@invokeLater
+                }
+                // The installer exited 0, but a `curl | bash` / `npm install -g` can finish cleanly while
+                // placing the binary somewhere not yet on PATH. Verify the agent's launch command is actually
+                // resolvable/runnable before claiming success.
+                val verified = command.isNotBlank() && AgentDetector.canExecute(command)
+                if (verified) {
+                    setStatus(message("status.installed", display), warn = false)
+                    // Incremental: we just verified this command runs, so add only it to the cache — no full
+                    // PATH re-scan of every other agent. The table + live dropdown re-read the cache.
+                    InstalledAgents.markInstalled(command)
+                    updateTableFromCache()
+                    AgentExtenderSettings.getInstance().fireDropdownRefresh()
+                } else {
+                    setStatus(message("status.install.unverified", display, command), warn = true)
+                }
+                updateInstallButtonState()
+            }
+        }
+    }
+
+    /** Build the shell command for the given install spec. On Windows a `shell` spec uses its `cmdWin`
+     *  (PowerShell one-liner); otherwise the unix `cmd`. */
+    private fun installShellCommand(spec: InstallSpec): String = when (spec.type) {
+        "npm" -> "npm install -g '${spec.pkg.replace("'", "'\\''")}'"
+        "pip" -> "python3 -m pip install '${spec.pkg.replace("'", "'\\''")}'"
+        "brew" -> "brew install '${spec.pkg.replace("'", "'\\''")}'"
+        "shell" -> if (SystemInfo.isWindows && spec.cmdWin.isNotBlank()) spec.cmdWin else spec.cmd
+        else -> ""
+    }
+
+    /** Launch an install command via the platform-appropriate shell so its PATH (nvm / /usr/local/bin) is
+     *  honoured. On Unix the user's interactive login shell runs the command; on Windows the installer
+     *  one-liner runs through PowerShell (`-NoProfile -Command`), since there is no `bash`/`curl` by default.
+     *  returns (success, lastOutputLine). */
+    private fun runInstallCommand(command: String): Pair<Boolean, String> {
+        if (command.isBlank()) return false to "empty command"
+        val app = ApplicationManager.getApplication()
+        val pb = if (SystemInfo.isWindows) {
+            ProcessBuilder("powershell", "-NoProfile", "-Command", command)
+        } else {
+            val shell = System.getenv("SHELL")?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: "bash"
+            ProcessBuilder(shell, "-lic", command)
+        }
+        return try {
+            pb.redirectErrorStream(true)
+            val p = pb.start()
+            val reader = p.inputStream.bufferedReader()
+            var last = ""
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                last = line!!
+                val current = last
+                app.invokeLater { setStatus(current.take(160), warn = false) }
+            }
+            val finished = p.waitFor(600, java.util.concurrent.TimeUnit.SECONDS)
+            val ok = finished && p.exitValue() == 0
+            ok to (last.ifBlank { if (ok) "done" else "command exited with an error" })
+        } catch (e: Exception) {
+            false to (e.message ?: "exception")
         }
     }
 
@@ -476,6 +617,15 @@ class AgentExtenderConfigurable : Configurable {
 
     // ── Install status (icon lit / greyed) ──────────────────────────
 
+    /** Render each row's icon lit/greyed straight from the shared installed-agents cache (no PATH re-scan).
+     *  Used after an incremental [InstalledAgents.markInstalled] so only the affected row changes. */
+    private fun updateTableFromCache() {
+        val commands = (0 until toolsModel.rowCount).map { r ->
+            (toolsModel.getValueAt(r, COL_COMMAND) as? String)?.trim() ?: ""
+        }
+        toolsTable.setInstalled(flagsFor(commands, InstalledAgents.installed()))
+    }
+
     /** Render each row's icon lit/greyed from the shared installed-agents cache, then refresh the cache in the
      *  background; only re-render when the detected set changes — the same mechanism as the terminal dropdown. */
     private fun refreshInstalledFlags() {
@@ -487,6 +637,8 @@ class AgentExtenderConfigurable : Configurable {
         // ...then refresh the cache and re-render only if the installed set actually changed.
         InstalledAgents.rescan(commands) { set ->
             toolsTable.setInstalled(flagsFor(commands, set))
+            // A finished install flips the row's status, so re-evaluate the Install button too.
+            updateInstallButtonState()
         }
     }
 

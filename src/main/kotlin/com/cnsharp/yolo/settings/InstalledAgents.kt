@@ -45,4 +45,18 @@ object InstalledAgents {
             }
         }
     }
+
+    /**
+     * Incrementally mark a single command as installed — call this right after an install finished and we
+     * already verified the command runs, so we add just this one command to the cache **without** re-scanning
+     * PATH for every other agent. Persists the change. Returns true iff the cache actually changed.
+     */
+    fun markInstalled(command: String): Boolean {
+        val key = command.trim().lowercase()
+        if (key.isEmpty()) return false
+        val state = AgentExtenderSettings.getInstance().state
+        if (key in state.installedCommands) return false
+        state.installedCommands.add(key)
+        return true
+    }
 }

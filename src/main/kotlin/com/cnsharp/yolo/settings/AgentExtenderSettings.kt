@@ -147,6 +147,12 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
         val CHANGED: Topic<AgentExtenderSettingsListener> =
             Topic.create("AgentExtenderSettings.Changed", AgentExtenderSettingsListener::class.java)
 
+        /** Lightweight signal: re-read the installed-agents cache and rebuild the terminal dropdown WITHOUT
+         *  re-scanning PATH. Fired after an install that already verified its command, so only the one new
+         *  agent appears — no full probe of every other agent. */
+        val DROPDOWN_REFRESH: Topic<AgentExtenderSettingsListener> =
+            Topic.create("AgentExtenderSettings.DropdownRefresh", AgentExtenderSettingsListener::class.java)
+
         fun getInstance(): AgentExtenderSettings =
             com.intellij.openapi.components.service<AgentExtenderSettings>()
                 .also { it.ensureSyncScheduled() }
@@ -155,6 +161,11 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
     /** Publish a change so subscribers (the YOLO terminal panel) can refresh their dropdown from current state. */
     fun fireChanged() {
         ApplicationManager.getApplication().messageBus.syncPublisher(CHANGED).changed()
+    }
+
+    /** Publish a lightweight dropdown refresh (re-read cache only, no PATH re-scan). */
+    fun fireDropdownRefresh() {
+        ApplicationManager.getApplication().messageBus.syncPublisher(DROPDOWN_REFRESH).changed()
     }
 }
 

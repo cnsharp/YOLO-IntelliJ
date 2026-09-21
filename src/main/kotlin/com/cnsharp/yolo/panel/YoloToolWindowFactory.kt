@@ -401,6 +401,12 @@ private class YoloPanel(
             .subscribe(AgentExtenderSettings.CHANGED, object : AgentExtenderSettingsListener {
                 override fun changed() = rebuild()
             })
+        // Lightweight refresh after an install: re-read the installed-agents cache and rebuild the dropdown
+        // WITHOUT re-scanning PATH — only the one newly installed agent should appear.
+        ApplicationManager.getApplication().messageBus.connect(this)
+            .subscribe(AgentExtenderSettings.DROPDOWN_REFRESH, object : AgentExtenderSettingsListener {
+                override fun changed() = populateFromCache(buildRows())
+            })
 
         rebuild()
     }
