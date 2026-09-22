@@ -80,24 +80,48 @@ each to a bitmap and compare silhouettes. A self-contained pure-Python rasterize
 a shape without a system renderer (cairo/svglib were unavailable on this machine). Match the
 filled silhouette, then install the *genuine colored* source — not a re-trace.
 
+### Dark-theme (`_dark`) variants
+
+IntelliJ's `IconLoader.getIcon` automatically selects `<name>_dark.svg` on dark themes
+(already wired through `AgentIcons`). Only some icons need one — this is the rule that was
+missed when `copilot_dark` / `grok_dark` were wrongly monochromed:
+
+- **Create a `_dark` ONLY when the base symbol is monochrome / near-black** and disappears on a
+  dark background: recolor the symbol to light gray `#BDBDBD` (matches the existing `codex_dark`
+  / `omp_dark` convention). Keep the exact same paths and `viewBox` — recolor fills only, do not
+  reshape. Examples: `command-code` (and the pre-existing `codex`).
+- **Do NOT create a `_dark` for colored brand symbols** (e.g. `copilot`, `grok`): they stay
+  visible on dark, and recoloring them to mono would violate rule 3.
+- **Do NOT create a `_dark` for two-tone marks whose light part is already visible on dark**
+  (e.g. `cursor`: black tile + white arrow — the white arrow shows on dark). Keep the base.
+- **No `_dark` for favicon PNG fallbacks** (`kimi`, `opencode`): you cannot recolor a raster
+  without tracing (rule 1). Ship the real favicon as-is.
+- CSS `@media (prefers-color-scheme: dark)` inside an SVG is **ignored** by `IconLoader` — it
+  renders the default (usually black) fill on dark themes, so such an icon still needs a `_dark`
+  (e.g. `aug`, `autohand`).
+
 ## Validation gate
 
-After installing, run:
+After installing, confirm there is no dangling `icon` path in `agents.json` (every referenced
+`/icons/agents/<id>.<ext>` file must exist on disk, and no stray `.DS_Store`), and that the
+project still compiles:
 
 ```bash
-./gradlew test --tests "com.cnsharp.yolo.settings.AgentRegistryTest"
+./gradlew compileKotlin --offline -q
 ```
 
-It asserts `agents[0].id == "claude"`, `agents[1].id == "codex"`, and
-`claude.icon == "/icons/agents/claude.svg"`. Adding/replacing an icon must not break it.
-Also confirm there is no dangling `icon` path in `agents.json` (every referenced
-`/icons/agents/<id>.<ext>` file must exist on disk, and no stray `.DS_Store`).
+If `src/test/kotlin/com/cnsharp/yolo/settings/AgentRegistryTest.kt` exists, also run it — it
+asserts `agents[0].id == "claude"`, `agents[1].id == "codex"`, and
+`claude.icon == "/icons/agents/claude.svg"`. NOTE: a copy may appear under `bin/test/` but that
+is a stale, git-ignored IDEA output dir (not Gradle's `build/`) — do NOT rely on it, and do not
+treat its presence as the test source.
 
 ## Checklist
 
 - [ ] Genuine asset found (SVG symbol, or real favicon if no SVG) — not hand-traced.
 - [ ] No text / wordmark in the final file.
 - [ ] Original brand colors preserved.
+- [ ] `_dark` variant added only where the base is monochrome/near-black (colored & two-tone-visible bases keep none); `_dark` is a `#BDBDBD` recolor of the same paths, not a reshape.
 - [ ] File at `src/main/resources/icons/agents/<id>.<svg|png>`, square-ish, not tiny.
 - [ ] `agents.json` `icon` field points at `/icons/agents/<id>.<ext>`.
 - [ ] No dangling/missing icon path; `AgentRegistryTest` green.
