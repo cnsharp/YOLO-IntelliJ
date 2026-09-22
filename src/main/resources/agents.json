@@ -61,7 +61,7 @@
     "command": "opencode",
     "skipFlag": "--auto",
     "resumeFlag": "",
-    "icon": "/icons/agents/opencode.svg",
+    "icon": "/icons/agents/opencode.png",
     "url": "https://opencode.ai/",
     "install": {
       "type": "shell",
@@ -187,7 +187,7 @@
     "command": "kimi",
     "skipFlag": "--yolo",
     "resumeFlag": "-r",
-    "icon": "/icons/agents/kimi.svg",
+    "icon": "/icons/agents/kimi.png",
     "url": "https://kimi.moonshot.cn/",
     "install": {
       "type": "npm",

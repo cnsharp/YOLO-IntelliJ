@@ -20,9 +20,15 @@ import kotlin.math.max
  *   2. Official icon bundled with the plugin (looked up from AgentRegistry by agent id)
  *   3. Generic icon DEFAULT
  *
- * Bundled icons are theme-agnostic (no `_dark` variant) — the agent logos read fine on both light and
- * dark themes. The only exception is the "y" mark used by the Skip-permissions checkbox, which keeps a
- * `_dark` variant (`skipY_dark.svg` / `skipYOn_dark.svg`) and is selected automatically by IconLoader.
+ * Bundled agent logos are genuine brand assets (symbol-only; never hand-traced). They are loaded through
+ * [IconLoader.getIcon], which automatically selects a `_dark` variant on dark themes. Monochrome/black
+ * brand symbols that are invisible on a dark background ship a `_dark` variant recolored to light gray
+ * (`#BDBDBD`). Currently only `command-code` (plus the pre-existing `codex`) ships one; other near-black
+ * marks were reviewed and kept without a `_dark` because they read fine on dark. Colored symbols (copilot,
+ * grok) keep their brand colors — they stay visible on dark themes, so no recolor is applied. `cursor`
+ * keeps its base (the white arrow glyph is visible on dark). `kimi` and `opencode` ship the real favicon
+ * as a `.png` (no genuine SVG symbol exists upstream). The Skip-permissions "y" mark and the Resume replay
+ * mark also keep `_dark` variants.
  * Uniform size 16x16.
  */
 object AgentIcons {
