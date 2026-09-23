@@ -217,8 +217,9 @@ class AgentExtenderConfigurable : Configurable {
         return button
     }
 
-    /** "Providers…" opens the per-agent LLM provider dialog (2.0). Enabled only for an agent that is both
-     *  installed and proxy-able (reads a custom LLM backend via env). See LlmProviderSupport. */
+    /** "Providers…" opens the per-agent LLM provider dialog (2.0, not yet finished). The button is intentionally
+     *  hidden until that feature lands, so it is not exposed prematurely. Kept wired (lateinit + enable logic)
+     *  so un-hiding later is a one-line change. See LlmProviderSupport. */
     private lateinit var providersButton: JButton
     /** "Install": installs the selected agent via its declared method (npm/pip/brew/shell). Disabled by default
      *  and only enabled for a selected row whose agent declares an automatable install spec and is not installed.
@@ -228,6 +229,8 @@ class AgentExtenderConfigurable : Configurable {
     private fun providersButton(): JComponent {
         val button = JButton(message("button.providers"))
         button.toolTipText = message("button.providers.tooltip")
+        // Feature not finished (2.0): keep the button out of the UI until then.
+        button.isVisible = false
         button.addActionListener {
             val row = toolsTable.selectedRow
             if (row < 0) {
