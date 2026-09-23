@@ -14,7 +14,8 @@ import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.ui.ContextHelpLabel
+import com.intellij.ide.HelpTooltip
+import com.intellij.icons.AllIcons
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBCheckBox
@@ -134,9 +135,18 @@ class AgentExtenderConfigurable : Configurable {
             updateInstallButtonState()
         }
 
+        val helpLabel = JBLabel(AllIcons.General.ContextHelp).apply {
+            // Anchor the hint to the RIGHT of the "?" icon. ContextHelpLabel hardcodes
+            // Alignment.HELP_BUTTON, whose popup can sit under the tiny icon and make the
+            // cursor repeatedly leave/re-enter it -> the tooltip flickers on hover.
+            HelpTooltip().apply {
+                setDescription(message("settings.agents.help"))
+                setLocation(HelpTooltip.Alignment.RIGHT)
+            }.installOn(this)
+        }
         val titleWithHelp = JPanel(HorizontalLayout(4)).apply {
             add(JBLabel(message("settings.agents.label")))
-            add(ContextHelpLabel.create(message("settings.agents.help")))
+            add(helpLabel)
         }
 
         val actionButtons = JPanel(HorizontalLayout(6)).apply {
@@ -555,8 +565,8 @@ class AgentExtenderConfigurable : Configurable {
     }
 
     /** Register table-change listener: mark "modified", check duplicates live, and auto-prefill the Skip flag for known agents.
-     *  Extracted separately so it can be called directly in headless test environments (the ContextHelpLabel inside
-     *  createComponent depends on IDEA's CoroutineScope service, which MockApplication does not provide). */
+     *  Extracted separately so it can be called directly in headless test environments (the HelpTooltip inside
+     *  createComponent depends on IDEA's Disposer service, which MockApplication does not provide). */
     private fun installListeners() {
         toolsModel.addTableModelListener { e ->
             if (rebuilding || autoFilling) return@addTableModelListener
