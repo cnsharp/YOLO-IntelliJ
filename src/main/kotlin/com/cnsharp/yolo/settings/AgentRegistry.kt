@@ -8,13 +8,16 @@ import com.intellij.openapi.diagnostic.Logger
  *  - npm/pip/brew: install via the named package manager (`pkg`).
  *  - shell: run `cmd` verbatim through the user's login shell (curl/irm installers, …). `cmdWin` is the
  *    Windows-only variant (e.g. a PowerShell one-liner), used when [com.intellij.openapi.util.SystemInfo.isWindows].
+ *    `updateCmd`, when set, is the agent's *own* self-update subcommand (e.g. `claude update`); the Update
+ *    button runs it directly instead of re-running the installer or opening the site.
  *  - url: no automatable package; the Install button opens `url` in the browser instead. */
 data class InstallSpec(
     val type: String = "",
     val pkg: String = "",
     val cmd: String = "",
     val cmdWin: String = "",
-    val url: String = ""
+    val url: String = "",
+    val updateCmd: String = ""
 ) {
     /** Whether the plugin can run this install head-less (everything except `url`). */
     val automatable: Boolean get() = type in setOf("npm", "pip", "brew", "shell")
@@ -24,6 +27,9 @@ data class InstallSpec(
         "shell" -> if (com.intellij.openapi.util.SystemInfo.isWindows && cmdWin.isNotBlank()) cmdWin else cmd
         else -> url
     }
+    /** True when the Update button can perform a real upgrade (package-manager spec, or a shell agent that
+     *  declares its own update subcommand). */
+    val hasUpdateCommand: Boolean get() = type in setOf("npm", "pip", "brew") || updateCmd.isNotBlank()
 }
 
 data class AgentDef(

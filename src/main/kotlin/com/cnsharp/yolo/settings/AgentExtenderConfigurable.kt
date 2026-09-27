@@ -59,7 +59,8 @@ class AgentExtenderConfigurable : Configurable {
         arrayOf(
             message("column.icon"), message("column.id"), message("column.displayName"),
             message("column.command"), message("column.baseArgs"),
-            message("column.skipFlag"), message("column.resumeFlag"), message("column.iconPath")
+            message("column.skipFlag"), message("column.resumeFlag"), message("column.iconPath"),
+            message("column.update")
         ),
         0
     )
@@ -101,6 +102,19 @@ class AgentExtenderConfigurable : Configurable {
      *  "Skip permissions" launch warning when ticked. */
     private val skipWarnCheckBox = JBCheckBox(message("settings.skipWarning.label"))
 
+    /** Settings checkbox mirroring [AgentExtenderSettings.State.autoCheckUpdates]: runs a background
+     *  agent-update check once on IDE startup when ticked. */
+    private val autoCheckCheckBox = JBCheckBox(message("settings.autoCheckUpdates.label"))
+
+    /** "Update": upgrades the selected agent to the latest version (or opens its site for shell/url agents).
+     *  Disabled until a check reports an available update for the selected row. */
+    private lateinit var updateButton: JButton
+    private var checking = false
+    /** Guards the TableModelListener while we write transient update-status cells, so a check never flips "modified". */
+    private var updatingStatus = false
+    /** Stable listener registered while the Settings page is open, so a background check (auto or manual) refreshes the rows. */
+    private var updateListener: ((Map<String, AgentUpdateChecker.UpdateInfo>) -> Unit)? = null
+
     private var panel: JComponent? = null
 
     /** Whether there are unsaved changes: drives the platform Apply button's enabled/disabled state. */
@@ -124,6 +138,12 @@ class AgentExtenderConfigurable : Configurable {
         // apply()/reset() still read it for persistence.
         toolsTable.removeColumn(toolsTable.columnModel.getColumn(COL_ICON_PATH))
 
+        // The "Update" column (last remaining view column after iconPath is removed) shows each row's
+        // update status with an icon + colour when a newer version is available.
+        val updateCol = toolsTable.columnModel.getColumn(toolsTable.columnModel.columnCount - 1)
+        updateCol.cellRenderer = UpdateStatusRenderer()
+        updateCol.preferredWidth = 110
+
         // Any cell change (add/remove row, edit, change icon) is marked as "unsaved changes", lighting the Apply button;
         // duplicate checks also run immediately so the user sees conflicts while editing, not only at Apply time.
         installListeners()
@@ -133,6 +153,7 @@ class AgentExtenderConfigurable : Configurable {
             if (e.valueIsAdjusting) return@addListSelectionListener
             updateProvidersButtonState()
             updateInstallButtonState()
+            updateUpdateButtonState()
         }
 
         val helpLabel = JBLabel(AllIcons.General.ContextHelp).apply {
@@ -155,10 +176,19 @@ class AgentExtenderConfigurable : Configurable {
             add(validateButton())
             add(installButton())
             add(providersButton())
+            add(checkUpdatesButton())
+            add(updateButton())
         }
         // Initialize the Providers button's enabled state now that it has been created.
         updateProvidersButtonState()
         updateInstallButtonState()
+        updateUpdateButtonState()
+
+        // Reflect any update statuses already cached (e.g. from the startup auto-check) and keep them live.
+        updateListener?.let { AgentUpdateChecker.removeListener(it) }
+        updateListener = { snap -> reflectUpdateStatuses(snap) }
+        AgentUpdateChecker.addListener(updateListener!!)
+        reflectUpdateStatuses(AgentUpdateChecker.snapshot())
 
         panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(titleWithHelp, JBScrollPane(toolsTable), true)
@@ -167,9 +197,17 @@ class AgentExtenderConfigurable : Configurable {
             .addComponent(statusLabel)
             .addLabeledComponent(JBLabel(message("settings.linkColor.label")), linkColorButton)
             .addComponent(skipWarnCheckBox)
+            .addComponent(autoCheckCheckBox)
             .panel
         reset()
         return panel!!
+    }
+
+    /** IDEA calls this when the Settings page is closed/disposed. Drop our update listener so a background
+     *  auto-check can't fire [reflectUpdateStatuses] into a disposed table (leak + NPE risk). */
+    override fun disposeUIResources() {
+        updateListener?.let { AgentUpdateChecker.removeListener(it) }
+        updateListener = null
     }
 
     // ── Locked detection ─────────────────────────────────────────────
@@ -188,7 +226,7 @@ class AgentExtenderConfigurable : Configurable {
         val button = JButton(message("button.add"))
         button.toolTipText = message("button.add.tooltip")
         button.addActionListener {
-            toolsModel.addRow(arrayOf<Any>("", "", "", "", "", "", "", ""))
+            toolsModel.addRow(arrayOf<Any>("", "", "", "", "", "", "", "", ""))
             val last = toolsModel.rowCount - 1
             toolsTable.selectionModel.setSelectionInterval(last, last)
             toolsTable.scrollRectToVisible(toolsTable.getCellRect(last, COL_ID, true))
@@ -252,7 +290,7 @@ class AgentExtenderConfigurable : Configurable {
         val enabled = if (row < 0) false else {
             val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
             LlmProviderSupport.isProviderConfigurable(
-                command, AgentExtenderSettings.getInstance().state.installedCommands
+                command, InstalledAgents.installed()
             )
         }
         providersButton.isEnabled = enabled
@@ -315,27 +353,149 @@ class AgentExtenderConfigurable : Configurable {
         installButton.isEnabled = enabled && !installing
     }
 
+    /** "Check Updates": scan every installed agent for a newer version via its package manager (background). */
+    private fun checkUpdatesButton(): JComponent {
+        val button = JButton(message("button.checkUpdates"))
+        button.toolTipText = message("button.checkUpdates.tooltip")
+        button.addActionListener {
+            if (checking) return@addActionListener
+            checking = true
+            button.isEnabled = false
+            setStatus(message("status.checkingUpdates"), warn = false)
+            AgentUpdateChecker.checkAll()
+            // The updateListener refreshes the rows as results arrive; re-enable once the scan finishes.
+            val app = ApplicationManager.getApplication()
+            app.executeOnPooledThread {
+                // Poll the shared "checking" flag inside AgentUpdateChecker indirectly: we simply wait for it
+                // to clear by re-running checkAll (no-op while running) — instead, mirror completion via a tiny wait.
+                while (AgentUpdateChecker.isChecking()) Thread.sleep(150)
+                app.invokeLater {
+                    checking = false
+                    updateUpdateButtonState()
+                    button.isEnabled = true
+                    // The scan finished, but the status line still reads "Checking updates…" (set above) and the
+                    // listener's banner guard (`text.isBlank()`) suppressed the "N updates available" banner during
+                    // the manual check. Surface the banner now if anything is available; otherwise clear the stale
+                    // "checking" message so it doesn't linger.
+                    val available = AgentUpdateChecker.snapshot().values.count {
+                        it.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE
+                    }
+                    if (available > 0) {
+                        setStatus(message("status.updatesAvailable", available), warn = false)
+                    } else if (statusLabel.text == message("status.checkingUpdates")) {
+                        setStatus("", warn = false)
+                    }
+                }
+            }
+        }
+        return button
+    }
+
+    /** "Update": upgrade the selected agent to the latest version. npm/pip/brew run their package-manager upgrade;
+     *  a shell agent with `updateCmd` runs that (its own self-update subcommand); everything else opens `url`.
+     *  Enabled only when a check reported an update for the selected, installed row (or the agent can self-update). */
+    private fun updateButton(): JComponent {
+        val button = JButton(message("button.update"))
+        button.toolTipText = message("button.update.tooltip")
+        button.isEnabled = false
+        button.addActionListener {
+            val row = toolsTable.selectedRow
+            if (row < 0) return@addActionListener
+            val spec = installSpecForRow(row) ?: return@addActionListener
+            val id = (toolsModel.getValueAt(row, COL_ID) as? String)?.trim() ?: ""
+            val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
+            val display = (toolsModel.getValueAt(row, COL_DISPLAY) as? String)?.trim()?.ifBlank { id } ?: id
+            val status = AgentUpdateChecker.statusFor(command)
+            when {
+                // Upgrade whenever a real upgrade is possible: a reported update, or any spec that has a
+                // package-manager command / own update subcommand (npm/pip/brew, or shell-with-updateCmd).
+                // This matches the button's enabled rule, so an enabled button always does something.
+                status == AgentUpdateChecker.Status.UPDATE_AVAILABLE || spec.hasUpdateCommand ->
+                    runInstall(spec, command, display, upgrade = true)
+                spec.url.isNotBlank() -> {
+                    BrowserUtil.browse(spec.url)
+                    setStatus(message("status.install.opened", display), warn = false)
+                }
+                else -> setStatus(message("status.selectRow"), warn = true)
+            }
+        }
+        updateButton = button
+        return button
+    }
+
+    /** Reflect the selected row's update status into the Update button's enabled state. */
+    private fun updateUpdateButtonState() {
+        val row = toolsTable.selectedRow
+        val enabled = if (row < 0) false else {
+            val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
+            val installed = command.isNotBlank() && command.lowercase() in InstalledAgents.installed()
+            if (!installed) false
+            else {
+                val spec = installSpecForRow(row)
+                // Enable whenever a real upgrade is possible (npm/pip/brew, or a shell agent with its own
+                // update subcommand) — independent of whether a background check has already marked it
+                // MANUAL/UPDATE_AVAILABLE, so self-updating agents stay clickable at all times.
+                val canUpdate = spec?.let { it.hasUpdateCommand || it.url.isNotBlank() } == true
+                AgentUpdateChecker.statusFor(command) == AgentUpdateChecker.Status.UPDATE_AVAILABLE || canUpdate
+            }
+        }
+        updateButton.isEnabled = enabled && !checking
+    }
+
+    /** Write the latest cached update statuses into the table's Update column (transient; never marks "modified"). */
+    private fun reflectUpdateStatuses(snap: Map<String, AgentUpdateChecker.UpdateInfo>) {
+        updatingStatus = true
+        try {
+            for (r in 0 until toolsModel.rowCount) {
+                val cmd = (toolsModel.getValueAt(r, COL_COMMAND) as? String)?.trim()?.lowercase() ?: ""
+                val code = if (cmd.isNotEmpty()) codeOf(snap[cmd]?.status ?: AgentUpdateChecker.Status.NA) else ""
+                if (toolsModel.getValueAt(r, COL_UPDATE) != code) toolsModel.setValueAt(code, r, COL_UPDATE)
+            }
+        } finally {
+            updatingStatus = false
+        }
+        val available = snap.values.count { it.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE }
+        if (available > 0 && statusLabel.text.isBlank()) {
+            setStatus(message("status.updatesAvailable", available), warn = false)
+        }
+        updateUpdateButtonState()
+    }
+
+    /** Map an update status to the short code stored in the table model (rendered by [UpdateStatusRenderer]). */
+    private fun codeOf(s: AgentUpdateChecker.Status): String = when (s) {
+        AgentUpdateChecker.Status.NA -> ""
+        AgentUpdateChecker.Status.CHECKING -> "checking"
+        AgentUpdateChecker.Status.UP_TO_DATE -> "uptodate"
+        AgentUpdateChecker.Status.UPDATE_AVAILABLE -> "update"
+        AgentUpdateChecker.Status.MANUAL -> "manual"
+        AgentUpdateChecker.Status.ERROR -> "error"
+    }
+
     /** Run the agent's install command on a background thread, stream its output to the status line, then
      *  verify the agent's launch command is actually runnable and refresh the installed flags + the live
      *  terminal dropdown so the row/icon lights up (and the Install button re-disables). */
-    private fun runInstall(spec: InstallSpec, command: String, display: String) {
+    private fun runInstall(spec: InstallSpec, command: String, display: String, upgrade: Boolean = false) {
         if (installing) return
         installing = true
         installButton.isEnabled = false
+        updateButton.isEnabled = false
         setStatus(message("status.installing", display, spec.target), warn = false)
         val app = ApplicationManager.getApplication()
         app.executeOnPooledThread {
-            val (ok, lastLine) = runInstallCommand(installShellCommand(spec))
+            val (ok, lastLine) = runInstallCommand(
+                if (upgrade) AgentUpdateChecker.updateCommand(spec) else installShellCommand(spec)
+            )
             app.invokeLater {
                 installing = false
                 if (!ok) {
                     setStatus(message("status.install.failed", display, lastLine), warn = true)
                     updateInstallButtonState()
+                    updateUpdateButtonState()
                     return@invokeLater
                 }
                 // The installer exited 0, but a `curl | bash` / `npm install -g` can finish cleanly while
                 // placing the binary somewhere not yet on PATH. Verify the agent's launch command is actually
-                // resolvable/runnable before claiming success.
+                // solvable/runnable before claiming success.
                 val verified = command.isNotBlank() && AgentDetector.canExecute(command)
                 if (verified) {
                     setStatus(message("status.installed", display), warn = false)
@@ -344,10 +504,16 @@ class AgentExtenderConfigurable : Configurable {
                     InstalledAgents.markInstalled(command)
                     updateTableFromCache()
                     AgentExtenderSettings.getInstance().fireDropdownRefresh()
+                    // After an upgrade, refresh this agent's cached update status so the Update column no
+                    // longer shows the now-stale "available" / old version (clicking Update again would be a no-op).
+                    // Run off the EDT: refresh() executes a version command synchronously (can block), and its
+                    // publish() already re-dispatches the table update back to the EDT.
+                    if (upgrade) app.executeOnPooledThread { AgentUpdateChecker.refresh(command, spec) }
                 } else {
                     setStatus(message("status.install.unverified", display, command), warn = true)
                 }
                 updateInstallButtonState()
+                updateUpdateButtonState()
             }
         }
     }
@@ -572,7 +738,7 @@ class AgentExtenderConfigurable : Configurable {
      *  createComponent depends on IDEA's Disposer service, which MockApplication does not provide). */
     private fun installListeners() {
         toolsModel.addTableModelListener { e ->
-            if (rebuilding || autoFilling) return@addTableModelListener
+            if (rebuilding || autoFilling || updatingStatus) return@addTableModelListener
             modified = true
             reportDuplicates()
             // When the user adds/edits a row's ID or Command, if the tool is a known agent and its Skip flag column is
@@ -650,8 +816,10 @@ class AgentExtenderConfigurable : Configurable {
         // ...then refresh the cache and re-render only if the installed set actually changed.
         InstalledAgents.rescan(commands) { set ->
             toolsTable.setInstalled(flagsFor(commands, set))
-            // A finished install flips the row's status, so re-evaluate the Install button too.
+            // A finished install flips the row's status, so re-evaluate both action buttons: the Install
+            // button (now installed ⇒ disabled) and the Update button, which is gated on the installed-cache.
             updateInstallButtonState()
+            updateUpdateButtonState()
         }
     }
 
@@ -668,6 +836,7 @@ class AgentExtenderConfigurable : Configurable {
         return modified
             || (linkColor.rgb and 0xFFFFFF) != state.linkColorRgb
             || skipWarnCheckBox.isSelected != state.skipWarningDismissed
+            || autoCheckCheckBox.isSelected != state.autoCheckUpdates
     }
 
     override fun apply() {
@@ -707,6 +876,9 @@ class AgentExtenderConfigurable : Configurable {
 
         // ①c Suppress the "Skip permissions" launch warning when the user ticks the checkbox.
         settings.state.skipWarningDismissed = skipWarnCheckBox.isSelected
+
+        // ①d Automatically check for agent updates on startup when the user ticks the checkbox.
+        settings.state.autoCheckUpdates = autoCheckCheckBox.isSelected
 
         // ② Custom tools: skip promoted agents (they are not written to customTools); only save user custom tools
         settings.state.customTools = (0 until toolsModel.rowCount).mapNotNull { r ->
@@ -804,7 +976,7 @@ class AgentExtenderConfigurable : Configurable {
                 toolsModel.addRow(
                     arrayOf<Any>(
                         "", def.id, def.displayName, def.command,
-                        baseArgs, flagFor(def.command, def.id), resumeFor(def.command, def.id), ""
+                        baseArgs, flagFor(def.command, def.id), resumeFor(def.command, def.id), "", ""
                     )
                 )
             }
@@ -817,14 +989,24 @@ class AgentExtenderConfigurable : Configurable {
                 toolsModel.addRow(
                     arrayOf<Any>(
                         "", tool.id, tool.displayName, tool.command,
-                        tool.baseArgs, flagFor(tool.command), resumeFor(tool.command, tool.id), tool.iconPath
+                        tool.baseArgs, flagFor(tool.command), resumeFor(tool.command, tool.id), tool.iconPath, ""
                     )
                 )
             }
             refreshInstalledFlags()
             linkColor = Color(state.linkColorRgb)
             skipWarnCheckBox.isSelected = state.skipWarningDismissed
+            autoCheckCheckBox.isSelected = state.autoCheckUpdates
+            // Clear any stale prior status (errors, "checking", duplicate warning) *before* reflecting the
+            // cached update results, so a legitimate "N updates available" banner set by reflectUpdateStatuses
+            // is not immediately wiped here.
             setStatus("", warn = false)
+            // Re-populate the transient Update column from the cached check results (e.g. the startup
+            // auto-check) — reset() rebuilds the table and clears it, so without this the column stays
+            // blank on open until a new check fires a listener.
+            reflectUpdateStatuses(AgentUpdateChecker.snapshot())
+            updateInstallButtonState()
+            updateUpdateButtonState()
         } finally {
             rebuilding = false
             modified = false
@@ -870,6 +1052,65 @@ class AgentExtenderConfigurable : Configurable {
         icon.paintIcon(null, g, 0, 0)
         g.dispose()
         return ImageIcon(GrayFilter.createDisabledImage(img))
+    }
+
+    /** Update column: shows each row's update status. An available update is highlighted with an icon + colour
+     *  (answer to "add an icon or colour"); up-to-date / manual / offline use plain text. The detected version
+     *  numbers are pulled live from [AgentUpdateChecker.infoFor] so the cell can show e.g. "1.2.3 → 1.3.0". */
+    private inner class UpdateStatusRenderer : TableCellRenderer {
+        private val label = JLabel()
+        // Amber so "update available" reads as attention without looking like an error.
+        private val updateColor = JBColor(0xD98700, 0xE0A030)
+        override fun getTableCellRendererComponent(
+            table: javax.swing.JTable?,
+            value: Any?,
+            isSelected: Boolean,
+            hasFocus: Boolean,
+            row: Int,
+            column: Int
+        ): Component {
+            label.icon = null
+            label.text = ""
+            label.foreground = JBColor.BLACK
+            val code = (value as? String) ?: ""
+            val cmd = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim()?.lowercase() ?: ""
+            val info = if (cmd.isNotEmpty()) AgentUpdateChecker.infoFor(cmd) else null
+            when (code) {
+                "checking" -> {
+                    label.text = message("update.status.checking")
+                    label.foreground = JBColor.GRAY
+                }
+                "uptodate" -> {
+                    label.icon = AllIcons.General.InspectionsOK
+                    val cur = info?.current?.takeIf { it.isNotEmpty() }
+                    label.text = if (cur != null) "${message("update.status.uptodate")} $cur" else message("update.status.uptodate")
+                    label.foreground = JBColor.GREEN
+                }
+                "update" -> {
+                    label.icon = AllIcons.General.Warning
+                    label.text = if (info != null && info.current.isNotEmpty() && info.latest.isNotEmpty())
+                        "${info.current} \u2192 ${info.latest}" else message("update.status.available")
+                    label.foreground = updateColor
+                }
+                "manual" -> {
+                    val cur = info?.current?.takeIf { it.isNotEmpty() }
+                    label.text = if (cur != null) "${message("update.status.manual")} $cur" else message("update.status.manual")
+                    label.foreground = JBColor.BLUE
+                }
+                "error" -> {
+                    label.icon = AllIcons.General.Error
+                    label.text = message("update.status.error")
+                    label.foreground = JBColor.RED
+                }
+            }
+            label.horizontalAlignment = SwingConstants.LEFT
+            label.background = if (isSelected) table?.selectionBackground else table?.background
+            // Keep the semantic status colour (amber/green/blue/red) for unselected rows; only switch to the
+            // selection colour when the row is selected, otherwise the colour coding would be wiped out.
+            if (isSelected) label.foreground = table?.selectionForeground
+            label.isOpaque = true
+            return label
+        }
     }
 
     /** Merged-list table: locked agents' ID/Command are read-only; rows that are not installed are greyed out (not lit) entirely. */
@@ -918,6 +1159,7 @@ class AgentExtenderConfigurable : Configurable {
         private const val COL_SKIP = 5
         private const val COL_RESUME = 6
         private const val COL_ICON_PATH = 7
+        private const val COL_UPDATE = 8
 
         private val NOTIFY: com.intellij.notification.NotificationGroup by lazy {
             NotificationGroupManager.getInstance().getNotificationGroup("com.cnsharp.yolo.notifications")

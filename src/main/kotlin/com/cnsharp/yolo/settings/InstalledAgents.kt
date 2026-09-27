@@ -17,9 +17,15 @@ import com.intellij.openapi.application.ApplicationManager
  */
 object InstalledAgents {
 
-    /** Lower-cased commands currently cached as installed. Cheap read; safe on any thread. */
-    fun installed(): Set<String> =
+    /** Guards all reads/writes of the mutable [AgentExtenderSettings.State.installedCommands] list, which can
+     *  otherwise be mutated (rescan clear+add, markInstalled add) while a reader (installed(), checkAll, the
+     *  providers-button state) iterates it — that would throw ConcurrentModificationException. */
+    private val lock = Any()
+
+    /** Lower-cased commands currently cached as installed. Returns a snapshot copy, safe on any thread. */
+    fun installed(): Set<String> = synchronized(lock) {
         AgentExtenderSettings.getInstance().state.installedCommands.toSet()
+    }
 
     /**
      * Re-detect [commands] for presence on PATH on a background thread, persist the result into the shared
@@ -38,10 +44,13 @@ object InstalledAgents {
                 .toSet()
             app.invokeLater {
                 val state = AgentExtenderSettings.getInstance().state
-                if (detected == state.installedCommands.toSet()) return@invokeLater
-                state.installedCommands.clear()
-                state.installedCommands.addAll(detected.sorted())
-                onChanged(state.installedCommands.toSet())
+                synchronized(lock) {
+                    if (detected == state.installedCommands.toSet()) return@invokeLater
+                    state.installedCommands.clear()
+                    state.installedCommands.addAll(detected.sorted())
+                }
+                // `detected` is already the new installed set, so pass it directly (no unsynchronized list read).
+                onChanged(detected)
             }
         }
     }
@@ -55,8 +64,10 @@ object InstalledAgents {
         val key = command.trim().lowercase()
         if (key.isEmpty()) return false
         val state = AgentExtenderSettings.getInstance().state
-        if (key in state.installedCommands) return false
-        state.installedCommands.add(key)
+        synchronized(lock) {
+            if (key in state.installedCommands) return false
+            state.installedCommands.add(key)
+        }
         return true
     }
 }

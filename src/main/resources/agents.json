@@ -10,7 +10,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://claude.ai/install.sh | bash",
-      "cmdWin": "irm https://claude.ai/install.ps1 | iex"
+      "cmdWin": "irm https://claude.ai/install.ps1 | iex",
+      "updateCmd": "claude update"
     }
   },
   {
@@ -24,7 +25,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
-      "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\""
+      "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
+      "updateCmd": "npm install -g @openai/codex@latest"
     }
   },
   {
@@ -52,7 +54,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://gh.io/copilot-install | bash",
-      "cmdWin": "winget install GitHub.Copilot"
+      "cmdWin": "winget install GitHub.Copilot",
+      "updateCmd": "copilot update"
     }
   },
   {
@@ -120,7 +123,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://openclaw.ai/install.sh | bash",
-      "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex"
+      "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex",
+      "updateCmd": "openclaw update"
     }
   },
   {
@@ -134,7 +138,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
-      "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex"
+      "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex",
+      "updateCmd": "kiro-cli update"
     }
   },
   {
@@ -285,7 +290,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://antigravity.google/cli/install.sh | bash",
-      "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex"
+      "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex",
+      "updateCmd": "agy update"
     }
   },
   {
@@ -325,7 +331,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
-      "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+      "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
+      "updateCmd": "hermes update"
     }
   },
   {
@@ -459,7 +466,8 @@
     "install": {
       "type": "shell",
       "cmd": "curl -s https://ohmyposh.dev/install.sh | bash -s",
-      "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget"
+      "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget",
+      "updateCmd": "oh-my-posh upgrade"
     }
   }
 ]
