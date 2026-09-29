@@ -39,7 +39,11 @@ class FileLinkFilter(
 
     override fun apply(text: String): LinkResult? {
         if (text.isBlank() || isDiffLine(text)) {
-            // A blank or diff line breaks any pending wrap sequence.
+            // A blank or diff line breaks the pending *prefix* chain (so a later line can't be mistaken
+            // for its continuation). It must NOT clear `lastCompletedPath`: a completed wrap's head rows
+            // stay clickable even after the terminal prints blank/other lines, and clearing it here would
+            // turn those head links into dead links. `lastCompletedPath` is only cleared when a *new* wrap
+            // chain actually begins (see the fresh-head-link branch below).
             wrapState?.pendingPath = ""
             wrapState?.continuationSpan = null
             return null
@@ -103,6 +107,10 @@ class FileLinkFilter(
                 // Remember what the head fragment turned out to be, so the head row's link (created on the
                 // previous line, before this reconstruction) opens the same complete file reference.
                 wrapState?.completedPaths?.set(prefix, WrapState.CompletedPath(fullPath, lineNum, col))
+                // Record the completed file chain-wide: every head row of this wrap (not just the immediate
+                // predecessor) must navigate to it. Without this, a 3+ line wrap leaves the earliest rows
+                // with a dead link because they were keyed by a different prefix than the one the tail set.
+                wrapState?.lastCompletedPath = WrapState.CompletedPath(fullPath, lineNum, col)
                 val link = yoloHyperlink(project) {
                     val file = resolve(fullPath) ?: return@yoloHyperlink
                     val p = project ?: return@yoloHyperlink
@@ -188,19 +196,28 @@ class FileLinkFilter(
                     val lastSep = headRaw.lastIndexOfAny(charArrayOf('/', '\\'))
                     val lastSegment = if (lastSep >= 0) headRaw.substring(lastSep + 1) else headRaw
                     if (!lastSegment.contains('.')) {
-                        // Always store the fragment so the next line can reconstruct it — even when it is a
-                        // truncated path (`...`/`…`). But a truncated head can never resolve to a real file,
-                        // so don't paint a dead half-link on it: only link-complete wrapped heads are
-                        // highlighted here; the final filename is linked on the continuation line instead
-                        // (see the wrap-continuation block above).
-                        wrapState.pendingPath = headRaw
+                        // Store the fragment so the next line can reconstruct it — but ONLY when this line is a
+                        // genuine fresh head (`prefix` empty). When a prefix was inherited from the previous
+                        // line this is a continuation: the wrap-reconstruction block above already holds the
+                        // *accumulated* path in `pendingPath`, and overwriting it with this line's own relative
+                        // fragment would corrupt the reconstruction (e.g. a 3-line wrap would lose the leading
+                        // directories and navigate to the wrong file). See `prefix.isEmpty()` guard below.
+                        if (prefix.isEmpty()) {
+                            wrapState.pendingPath = headRaw
+                            // A new wrap chain begins here, so drop any completion left by a previous chain —
+                            // otherwise this chain's head links could navigate to that stale file. Crucially we
+                            // must NOT clear `lastCompletedPath` on every line: ordinary output following a
+                            // completed wrap must keep it alive, or the wrapped path's head rows turn into dead
+                            // links (this was the bug where only the final line stayed clickable).
+                            wrapState.lastCompletedPath = null
+                        }
                         if (!headRaw.contains("...") && !headRaw.contains('…')) {
-                            // Highlight the head row too, so a wrapped path is not left half-painted. The
-                            // fragment alone is not a real path yet, so the link opens whatever the next line
-                            // completes it to (recorded below); if nothing completes it, [resolve] finds no
-                            // file and the click simply does nothing.
+                            // Highlight the head row too, so a wrapped path is not left half-painted. The link
+                            // navigates to whatever the chain completes to (`lastCompletedPath`, set by the
+                            // continuation line) — falling back to this fragment (or its recorded completion)
+                            // until then — so every row of a multi-line wrap opens the right file.
                             val link = yoloHyperlink(project) {
-                                val completed = wrapState.completedPaths[headRaw]
+                                val completed = wrapState.lastCompletedPath ?: wrapState.completedPaths[headRaw]
                                 val file = resolve(completed?.path ?: headRaw) ?: return@yoloHyperlink
                                 val p = project ?: return@yoloHyperlink
                                 openFileAt(p, file, completed?.line, completed?.column)

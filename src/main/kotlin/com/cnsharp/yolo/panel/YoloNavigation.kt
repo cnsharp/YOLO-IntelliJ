@@ -91,6 +91,22 @@ internal fun openNavigationItem(item: NavigationItem) {
 }
 
 /**
+ * Resolve a type name and open its source file at a specific 1-based [line] (and optional 1-based [col]).
+ * Used by the `TypeName:line` branch of [TypeLinkFilter] so an agent citation like
+ * `DeductPaymentServiceImpl:182` lands on that line rather than the class declaration.
+ *
+ * Must be called on the EDT and **outside** a read action (resolution runs under a read action inside
+ * [resolveType]; the subsequent editor open happens here). No-op when the type doesn't resolve or has no
+ * backing file (e.g. a synthetic symbol).
+ */
+internal fun openTypeAtLine(project: Project, name: String, line: Int, col: Int?) {
+    val item = resolveType(project, name) ?: return
+    val psi = item as? PsiElement ?: return
+    val vf = psi.containingFile?.virtualFile ?: return
+    openFileAt(project, File(vf.path), line, col)
+}
+
+/**
  * Best-effort member resolution: given a resolved class element and a member name, find the member symbol
  * (method / field / inner class) via the language-agnostic `gotoSymbolContributor` EP and return it as a
  * navigatable item.

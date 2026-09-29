@@ -298,6 +298,81 @@ class FileLinkFilterTest {
     }
 
     @Test
+    fun testThreeLineHardWrapReconstructed() {
+        // A path that wraps across THREE physical lines (terminal width) must still reconstruct into one
+        // link on the final filename, and — crucially — the reconstructed path must keep its leading
+        // directories (the earlier rows' accumulated prefix), not collapse to a relative fragment. This is
+        // the regression: a 3-line wrap used to corrupt `pendingPath` on the middle row and navigate to the
+        // wrong file (or none).
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val l0 = filter.apply("/Users/admin/IdeaProjects/account-system/account-biz")
+            ?.items?.map { "/Users/admin/IdeaProjects/account-system/account-biz".substring(it.startOffset, it.endOffset) }.orEmpty()
+        val l1 = filter.apply("  /src/main/java/com/cnsharp/account/mq/tdmq/producer/Deduct")
+            ?.items?.map { "  /src/main/java/com/cnsharp/account/mq/tdmq/producer/Deduct".substring(it.startOffset, it.endOffset) }.orEmpty()
+        val l2 = filter.apply("  SuccessProducer.java")
+            ?.items?.map { "  SuccessProducer.java".substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals("head row must be highlighted", listOf("/Users/admin/IdeaProjects/account-system/account-biz"), l0)
+        assertEquals("intermediate wrap row must be highlighted", listOf("/src/main/java/com/cnsharp/account/mq/tdmq/producer/Deduct"), l1)
+        assertEquals("final filename must link the reconstructed path", listOf("SuccessProducer.java"), l2)
+        // The reconstructed target must be the FULL absolute path, with leading dirs preserved.
+        assertEquals(
+            "reconstructed path must keep leading directories",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
+    fun testFourLineHardWrapReconstructed() {
+        // Four physical lines: every head row must still navigate to the same completed file (chain-wide
+        // completion), not just the row immediately preceding the filename.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "/Users/admin/IdeaProjects/account-system/account-biz"
+        val r0 = filter.apply(head)?.items?.map { head.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val mid = "  /src/main/java/com/cnsharp/account/mq"
+        val r1 = filter.apply(mid)?.items?.map { mid.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val mid2 = "  /tdmq/producer/Deduct"
+        val r2 = filter.apply(mid2)?.items?.map { mid2.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val tail = "  SuccessProducer.java"
+        val r3 = filter.apply(tail)?.items?.map { tail.substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals(listOf(head), r0)
+        assertEquals(listOf("/src/main/java/com/cnsharp/account/mq"), r1)
+        assertEquals(listOf("/tdmq/producer/Deduct"), r2)
+        assertEquals(listOf("SuccessProducer.java"), r3)
+        assertEquals(
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
+    fun testWrapKeepsCompletionAfterFollowingOutput() {
+        // Regression: a wrapped path's completion must survive the ordinary lines the agent prints *after*
+        // it. The earlier row links navigate via `lastCompletedPath`, so if it were cleared on every line
+        // only the final filename would stay clickable — the user reported exactly that.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        filter.apply("/Users/admin/IdeaProjects/account-system/account-biz")
+        filter.apply("  /src/main/java/com/cnsharp/account/mq/tdmq/producer/Deduct")
+        filter.apply("  SuccessProducer.java")
+        assertEquals(
+            "completion must be present right after the wrap",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+        // Agent keeps printing normal output afterwards (no blank line, no new path).
+        filter.apply("done")
+        filter.apply("see above file for details")
+        assertEquals(
+            "completion must survive following ordinary output",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
     fun testHardWrapHeadEndingInSlashSetsPendingPrefix() {
         // The terminal wrapped exactly at a path separator: the head line ends with '/'. The trailing
         // separator must be preserved in the prefix so the reconstructed path keeps its delimiter.
@@ -335,6 +410,44 @@ class FileLinkFilterTest {
         // The continuation line must produce no link.
         val result = filter.apply("e")
         assertTrue(result == null || result.items.isEmpty())
+    }
+
+    @Test
+    fun testWrapKeepsCompletionAfterBlankLine() {
+        // Regression for the user's "还是不行" after a completed multi-line wrap: agent output usually
+        // follows a wrapped path with normal text — frequently including blank lines. A blank line must
+        // clear the *pending prefix* (so a later line isn't mistaken for a continuation) but must NOT clear
+        // `lastCompletedPath`, or the wrapped path's earlier rows become dead links. This pins that the
+        // completion survives a trailing blank line.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        filter.apply("/Users/admin/IdeaProjects/account-system/account-biz")
+        filter.apply("  /src/main/java/com/cnsharp/account/mq/tdmq/producer/Deduct")
+        filter.apply("  SuccessProducer.java")
+        assertEquals(
+            "completion must be present right after the wrap",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+        // A blank line appears after the completed wrap (normal agent output).
+        filter.apply("")
+        assertEquals(
+            "pending prefix must be cleared by the blank line",
+            "",
+            state.pendingPath
+        )
+        assertEquals(
+            "completion must survive the blank line",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
+        // More ordinary output after the blank line — completion must still be alive.
+        filter.apply("done")
+        assertEquals(
+            "completion must survive following output after the blank line",
+            "/Users/admin/IdeaProjects/account-system/account-biz/src/main/java/com/cnsharp/account/mq/tdmq/producer/DeductSuccessProducer.java",
+            state.lastCompletedPath?.path
+        )
     }
 
     @Test

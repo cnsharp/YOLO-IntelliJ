@@ -156,8 +156,30 @@ internal val STACK_PY_SQ_PATTERN: Pattern = Pattern.compile(
  * **Named groups:** `qualified`, `simple` (mutually exclusive — exactly one is non-null per match).
  */
 internal val TYPE_NAME_PATTERN: Pattern = Pattern.compile(
-    """(?<![.\w/\\])(?<qualified>\\?(?:[A-Za-z_][A-Za-z0-9_]*+)(?:(?:\.|::|\\)[A-Za-z_][A-Za-z0-9_]*+)+)(?!\.[a-z])(?![#.][A-Za-z_]\w*)""" +
-        """|(?<![.\w/\\])(?<simple>(?![A-Z]+\b)[A-Z][a-zA-Z0-9_]*+)(?!\.[a-z])(?![#.][A-Za-z_]\w*)"""
+    """(?<![.\w/\\])(?<qualified>\\?(?:[A-Za-z_][A-Za-z0-9_]*+)(?:(?:\.|::|\\)[A-Za-z_][A-Za-z0-9_]*+)+)(?!\.[a-z])(?![#.][A-Za-z_]\w*)(?!:\d)""" +
+        """|(?<![.\w/\\])(?<simple>(?![A-Z]+\b)[A-Z][a-zA-Z0-9_]*+)(?!\.[a-z])(?![#.][A-Za-z_]\w*)(?!:\d)"""
+)
+
+/**
+ * Type reference followed by a line number (and optional column): `Foo:182`, `com.foo.Bar:182:12`,
+ * `com.foo.Bar.Baz:182`. The typical source is an agent "caller" citation such as
+ * `DeductPaymentServiceImpl:182` printed as `调用方: DeductPaymentServiceImpl:182`.
+ *
+ * The type part reuses the qualified / PascalCase-simple structure of [TYPE_NAME_PATTERN]; the `:digits`
+ * suffix is read as a 1-based line (and an optional second `:digits` as a column). It is distinct from a
+ * member reference (`Class.member` / `Class#member`, which use `.`/`#`) and from a file reference
+ * (`File.ext:line`, which carries an extension) — so it never collides with [MEMBER_REF_PATTERN] or the
+ * stack-trace / file filters.
+ *
+ * Not preceded by a path/word/dot separator (`(?<![.\w/\\])`), so a path segment or an `http(s):` URL path
+ * is never mistaken for a type. The type part is matched purely structurally; whether a match is actually
+ * linked is gated in [com.cnsharp.yolo.panel.TypeLinkFilter] to known project types. Drives the
+ * `TypeName:line` branch of [com.cnsharp.yolo.panel.TypeLinkFilter].
+ *
+ * **Named groups:** `qualified`, `simple` (mutually exclusive), `line`, `col`.
+ */
+internal val TYPE_LINE_PATTERN: Pattern = Pattern.compile(
+    """(?<![.\w/\\])(?:(?<qualified>\\?(?:[A-Za-z_][A-Za-z0-9_]*+)(?:(?:\.|::|\\)[A-Za-z_][A-Za-z0-9_]*+)+)|(?<simple>(?![A-Z]+\b)[A-Z][a-zA-Z0-9_]*+)):(?<line>\d+)(?::(?<col>\d+))?"""
 )
 
 /**

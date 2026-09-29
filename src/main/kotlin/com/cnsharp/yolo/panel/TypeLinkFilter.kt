@@ -143,6 +143,48 @@ class TypeLinkFilter(
             }
         }
 
+        // --- Type:line references: `TypeName:line[:col]` (e.g. an agent "caller" citation like
+        //     `DeductPaymentServiceImpl:182`). Link the full span and, on click, open the resolved type's
+        //     source file at the given line. Gated to known project types **and** known source-file base
+        //     names (mirroring the bare-type loop's file-name fallback) — a `TypeName` immediately followed
+        //     by `:digits` is excluded from the type loop via the `(?!:\d)` lookahead in TYPE_NAME_PATTERN,
+        //     so only this branch links it (no overlapping hyperlink). ---
+        val tl = TYPE_LINE_PATTERN.matcher(text)
+        var tlGuard = 0
+        while (tl.find() && tlGuard++ < MAX_MATCHES_PER_LINE) {
+            val qualified = tl.group("qualified")
+            val simple = tl.group("simple")
+            val isType = when {
+                qualified != null -> lastTypeNameSegment(qualified) in types.simple
+                simple != null -> types.containsSimple(simple)
+                else -> false
+            }
+            // Also accept a known source-file base name (e.g. a Kotlin file facade) so a `TypeName:line`
+            // whose name isn't an indexed class still links and opens the file at that line.
+            val isFile = simple != null && types.containsFile(simple)
+            if (!isType && !isFile) continue
+            val name = qualified ?: simple ?: continue
+            val line = tl.group("line")?.toIntOrNull() ?: continue
+            val col = tl.group("col")?.toIntOrNull()
+            // Report the resolved reference (test seam) synchronously — PSI navigation itself is deferred to
+            // click time, but the type this link targets is known here.
+            onResolved?.invoke(name)
+            val link = yoloHyperlink(project) {
+                if (project == null) return@yoloHyperlink
+                // Prefer type resolution (lands on the class at the line); fall back to opening the source
+                // file directly when the name is only a known file facade (no enclosing class to resolve).
+                if (isType) {
+                    openTypeAtLine(project, name, line, col)
+                } else {
+                    val vf = simple?.let { types.resolveFile(it) }
+                    if (vf != null) openFileAt(project, File(vf.path), line, col)
+                }
+            }
+            items.add(LinkResultItem(tl.start(), tl.end(), link))
+            linkedThisLine = true
+        }
+        // --- End type:line references ---
+
         // Hard-wrap head detection: if a qualified name reaches end-of-line, remember it so the next physical
         // line can reconstruct (e.g. `com.foo.Ba` + `r` → `com.foo.Bar`). Skip when this line already linked a
         // complete type, and don't hold a known complete type as a pending prefix (it is not a wrap, and holding

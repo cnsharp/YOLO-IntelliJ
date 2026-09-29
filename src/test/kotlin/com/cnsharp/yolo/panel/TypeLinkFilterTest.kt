@@ -17,7 +17,7 @@ import org.junit.Test
 class TypeLinkFilterTest {
 
     private val types = YoloProjectTypes.Snapshot(
-        simple = setOf("YoloToolWindowFactory", "AgentExtenderSettings", "TypeLinkFilter"),
+        simple = setOf("YoloToolWindowFactory", "AgentExtenderSettings", "TypeLinkFilter", "DeductPaymentServiceImpl"),
         files = setOf("YoloNavigation", "Main"),
     )
 
@@ -75,5 +75,49 @@ class TypeLinkFilterTest {
         // not a type link — TypeLinkFilter must not also link the bare `YoloNavigation` portion, which would
         // collide with the file link.
         assertTrue(linked("edit YoloNavigation.kt please").isEmpty())
+    }
+
+    @Test
+    fun testSimpleTypeWithLineLinked() {
+        // An agent "caller" citation like `调用方: DeductPaymentServiceImpl:182` must link the *whole*
+        // `DeductPaymentServiceImpl:182` span (so clicking lands on line 182, not just the class declaration).
+        assertEquals(listOf("DeductPaymentServiceImpl:182"), linked("调用方: DeductPaymentServiceImpl:182"))
+    }
+
+    @Test
+    fun testQualifiedTypeWithLineLinked() {
+        // A qualified name with a trailing `:line` must also link the full span.
+        assertEquals(
+            listOf("com.cnsharp.yolo.panel.TypeLinkFilter:182"),
+            linked("see com.cnsharp.yolo.panel.TypeLinkFilter:182 here"),
+        )
+    }
+
+    @Test
+    fun testTypeWithLineAndColumnLinked() {
+        // Optional `:col` after `:line` is included in the link span.
+        assertEquals(listOf("DeductPaymentServiceImpl:182:13"), linked("at DeductPaymentServiceImpl:182:13"))
+    }
+
+    @Test
+    fun testBareTypeStillLinkedDespiteLineLookahead() {
+        // Regression guard for the `(?!:\d)` lookahead added to TYPE_NAME_PATTERN: a `TypeName` *not*
+        // followed by `:digits` must still link to the class declaration as before.
+        assertEquals(listOf("DeductPaymentServiceImpl"), linked("see DeductPaymentServiceImpl here"))
+    }
+
+    @Test
+    fun testUnknownTypeWithLineNotLinked() {
+        // A `TypeName:line` whose type is not a known project type must stay plain text (noise gating),
+        // exactly like the bare-type path.
+        assertTrue(linked("caller FooBar:182").isEmpty())
+    }
+
+    @Test
+    fun testFileFacadeWithLineLinked() {
+        // `Main` is only a source-file facade (not a class), so the type gate misses it — but the file-name
+        // fallback must still link `Main:182` and open the file at that line. Regression guard: a bare `Main`
+        // was already linked before the `TypeName:line` feature; it must not disappear behind a `:line`.
+        assertEquals(listOf("Main:182"), linked("open Main:182 now"))
     }
 }

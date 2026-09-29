@@ -59,6 +59,22 @@ class WrapState {
      */
     val completedPaths: MutableMap<String, CompletedPath> = HashMap()
 
+    /**
+     * The most recent path a wrap chain completed to (the full file plus optional line/column), set when a
+     * continuation line with an extension/`:line` finishes the reconstruction. Head links across the *whole*
+     * chain — not just the immediate predecessor — navigate to this, so a multi-line wrap no longer leaves
+     * its earliest rows with a dead link.
+     *
+     * Lifetime: set when a chain completes, and cleared only when a *new* wrap chain begins (a fresh path
+     * fragment reaching end-of-line). It must NOT be cleared on every line, and it must NOT be cleared on a
+     * blank/diff line either — the agent typically prints more output (often with blank lines) after a
+     * wrapped path, and that must keep `lastCompletedPath` alive, or the wrapped path's head rows would turn
+     * into dead links (only the final row would stay clickable). This is intentionally chain-scoped, not
+     * per-line. The blank/diff branch in [FileLinkFilter.apply] only resets `pendingPath`/`continuationSpan`
+     * (to stop a later line being mistaken for a continuation), never this field.
+     */
+    var lastCompletedPath: CompletedPath? = null
+
     /** A file reference completed by a continuation line: full path plus its optional line/column. */
     data class CompletedPath(val path: String, val line: Int?, val column: Int?)
 
