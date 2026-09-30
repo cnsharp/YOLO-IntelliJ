@@ -1,5 +1,7 @@
 package com.cnsharp.yolo.panel
 
+import com.intellij.openapi.project.Project
+import com.jediterm.terminal.model.hyperlinks.HyperlinkFilter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -450,6 +452,182 @@ class FileLinkFilterTest {
         )
     }
 
+    // ---- Bare-name (path-less) hard-wrap reconstruction ----
+    // A file name with no directory prefix that the terminal hard-wrapped mid-name, e.g.
+    //   AccountD
+    //   ataMigrationDispatcher.java:18
+    // is matched by STACK_BARE_PATTERN (not PATH_PATTERN), so it needs its own reconstruction. The head
+    // fragment (AccountD) must also become clickable and navigate to the reconstructed name.
+
+    @Test
+    fun testBareNameTwoLineHardWrapReconstructed() {
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "AccountD"
+        val headLinked = filter.apply(head)
+            ?.items?.map { head.substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals("the bare head fragment must be highlighted", listOf("AccountD"), headLinked)
+        val tail = "ataMigrationDispatcher.java:18"
+        val tailLinked = filter.apply(tail)
+            ?.items?.map { tail.substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals("the continuation must be highlighted", listOf("ataMigrationDispatcher.java:18"), tailLinked)
+        assertEquals(
+            "reconstructed name must be the full joined file name",
+            "AccountDataMigrationDispatcher.java",
+            state.lastCompletedBare?.path
+        )
+        assertEquals(18, state.lastCompletedBare?.line)
+    }
+
+    @Test
+    fun testBareNameThreeLineHardWrapReconstructed() {
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val h0 = filter.apply("AccountData")?.items?.map { "AccountData".substring(it.startOffset, it.endOffset) }.orEmpty()
+        val mid = "MigrationDis"
+        val h1 = filter.apply(mid)?.items?.map { mid.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val tail = "patcher.java:18"
+        val h2 = filter.apply(tail)?.items?.map { tail.substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals(listOf("AccountData"), h0)
+        assertEquals(listOf("MigrationDis"), h1)
+        assertEquals(listOf("patcher.java:18"), h2)
+        assertEquals(
+            "every row must navigate to the same reconstructed name",
+            "AccountDataMigrationDispatcher.java",
+            state.lastCompletedBare?.path
+        )
+    }
+
+    @Test
+    fun testBareNameWrapKeepsCompletionAfterBlankLine() {
+        // Like the path case: a blank line after a completed bare wrap must clear the pending fragment but
+        // keep lastCompletedBare alive, or the head row turns into a dead link.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        filter.apply("AccountD")
+        filter.apply("ataMigrationDispatcher.java:18")
+        assertEquals("AccountDataMigrationDispatcher.java", state.lastCompletedBare?.path)
+        filter.apply("") // blank line
+        assertEquals("pending fragment must be cleared", "", state.pendingBareName)
+        assertEquals("completion must survive the blank line", "AccountDataMigrationDispatcher.java", state.lastCompletedBare?.path)
+        filter.apply("done")
+        assertEquals("completion must survive following output", "AccountDataMigrationDispatcher.java", state.lastCompletedBare?.path)
+    }
+
+    @Test
+    fun testPathHeadLineStillLinkedDespiteBareHeadGuard() {
+        // A path head like `/foo/Bar` (no extension) must NOT be clobbered by the bare-head branch: the
+        // line contains a '/', so the bare-head branch is skipped and the path head remains clickable.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "/src/main/java/com/cnsharp/order/biz/service/Bar"
+        val linked = filter.apply(head)
+            ?.items?.map { head.substring(it.startOffset, it.endOffset) }.orEmpty()
+        assertEquals(listOf(head), linked)
+    }
+
+    @Test
+    fun testFilePathWrapBeforeFileSegment() {
+        // User-reported real case: a path-prefixed reference that hard-wraps right before the file name.
+        //   src/test/kotlin/com/cnsharp/yolo/panel/
+        //   FileLinkFilterTest.kt
+        // Both rows must navigate to the reconstructed file; neither may be a dead link.
+        val state = WrapState()
+        val f = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "src/test/kotlin/com/cnsharp/yolo/panel/"
+        val h = f.apply(head)
+        val hLinked = h?.items?.map { head.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val cont = "FileLinkFilterTest.kt"
+        val c = f.apply(cont)
+        val cLinked = c?.items?.map { cont.substring(it.startOffset, it.endOffset) }.orEmpty()
+        println("HEAD linked=$hLinked")
+        println("CONT linked=$cLinked")
+        println("lastCompletedPath=${state.lastCompletedPath}")
+        // The head row should be highlighted.
+        assertEquals(listOf(head), hLinked)
+        // The continuation row's file name should be highlighted.
+        assertEquals(listOf("FileLinkFilterTest.kt"), cLinked)
+        assertEquals(
+            "src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
+    fun testSingleLineFullPathLinkedAsOneSpan() {
+        // A full path on one line must be ONE link spanning the whole path, not split into the directory
+        // part + the file-name part by an overlapping filter.
+        val f = FileLinkFilter(null, "/tmp/agent-working-dir")
+        val p = "src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt"
+        val linked = f.apply(p)?.items?.map { p.substring(it.startOffset, it.endOffset) }.orEmpty()
+        println("SINGLE-LINE linked=$linked")
+        assertEquals("full path must be one link", listOf(p), linked)
+    }
+
+    @Test
+    fun testSingleLineFullPathEmbeddedLinkedAsOneSpan() {
+        val f = FileLinkFilter(null, "/tmp/agent-working-dir")
+        val line = "see src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt here"
+        val linked = f.apply(line)?.items?.map { line.substring(it.startOffset, it.endOffset) }.orEmpty()
+        println("EMBEDDED linked=$linked")
+        assertEquals(listOf("src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt"), linked)
+    }
+
+    @Test
+    fun testFilePathWrapInsideFileSegment() {
+        // Variant: the wrap splits the file name itself (...panel/File | LinkFilterTest.kt).
+        val state = WrapState()
+        val f = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "src/test/kotlin/com/cnsharp/yolo/panel/File"
+        val h = f.apply(head)?.items?.map { head.substring(it.startOffset, it.endOffset) }.orEmpty()
+        val cont = "LinkFilterTest.kt"
+        val c = f.apply(cont)?.items?.map { cont.substring(it.startOffset, it.endOffset) }.orEmpty()
+        println("HEAD2 linked=$h")
+        println("CONT2 linked=$c")
+        assertEquals(listOf(head), h)
+        assertEquals(listOf("LinkFilterTest.kt"), c)
+        assertEquals(
+            "src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
+    fun testBareWrapDiagnostic() {
+        val state = WrapState()
+        val f = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val h = f.apply("AccountD")
+        assertEquals("head must link AccountD", listOf("AccountD"),
+            h?.items?.map { "AccountD".substring(it.startOffset, it.endOffset) }.orEmpty())
+        assertEquals("pendingBareName must be set on head", "AccountD", state.pendingBareName)
+        val cont = "  ataMigrationDispatcher.java:18"
+        val c = f.apply(cont)
+        assertEquals("continuation must link the whole tail",
+            listOf("ataMigrationDispatcher.java:18"),
+            c?.items?.map { cont.substring(it.startOffset, it.endOffset) }.orEmpty())
+        assertTrue("continuationSpan must be set", state.continuationSpan != null)
+        assertEquals("lastCompletedBare must be the full name",
+            "AccountDataMigrationDispatcher.java", state.lastCompletedBare?.path)
+    }
+
+    @Test
+    fun testStackTraceSkipsBareWrapTail() {
+        // Diagnostic: after FileLinkFilter reconstructs a bare wrap, StackTraceLinkFilter (registered AFTER
+        // FileLinkFilter, so it would win overlapping spans) must skip the partial-name match on the
+        // continuation line, otherwise its dead `ataMigrationDispatcher.java` link overrides the good one.
+        val state = WrapState()
+        val fileFilter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        fileFilter.apply("AccountD")
+        fileFilter.apply("ataMigrationDispatcher.java:18")
+        assertTrue("FileLinkFilter must set continuationSpan", state.continuationSpan != null)
+        val stackFilter = StackTraceLinkFilter(null, "/tmp/agent-working-dir", state)
+        val result = stackFilter.apply("ataMigrationDispatcher.java:18")
+        assertTrue(
+            "StackTraceLinkFilter must skip the overlapping partial-name match (got $result)",
+            result == null || result.items.isEmpty()
+        )
+    }
+
     @Test
     fun testBlankLineBreaksWrapSequence() {
         // An empty line between head and continuation clears the pending prefix.
@@ -519,6 +697,52 @@ class FileLinkFilterTest {
         )
         assertTrue("truncated head must not be linked as a dead half-link", head.isEmpty())
         assertEquals(listOf("Listener.java"), tail)
+    }
+
+    // ===== Regression: the full pipeline must link a path-prefixed file reference as ONE span, even when
+    // the file's base name is also a known project type. MemberLinkFilter used to match `Name.kt` as a
+    // `Class.member` reference (treating the extension as a member) and, being registered after
+    // FileLinkFilter, win the overlap — splitting `src/.../Name.kt` into `src/.../` + `Name.kt`. =====
+    @Test
+    fun testPipelineSingleLinePathIsOneSpan() {
+        val dir = "/tmp/agent-working-dir"
+        // Simulate runIde where `FileLinkFilterTest` is a real project type (a Kotlin class).
+        val types = YoloProjectTypes.Snapshot(
+            simple = setOf("FileLinkFilterTest"),
+            files = setOf("FileLinkFilterTest"),
+        )
+        val typesProvider: (Project?) -> YoloProjectTypes.Snapshot = { types }
+        val state = WrapState()
+        val filters = listOf<HyperlinkFilter>(
+            FileLinkFilter(null, dir, state),
+            MemberLinkFilter(null, state, typesProvider),
+            TypeLinkFilter(null, typesProvider, state),
+            StackTraceLinkFilter(null, dir, state),
+            UrlLinkFilter(),
+        )
+        // JediTerm merge: later filters win overlapping positions.
+        val p = "src/test/kotlin/com/cnsharp/yolo/panel/FileLinkFilterTest.kt"
+        val owner = Array(p.length) { -1 }
+        val itemText = Array(p.length) { "" }
+        filters.forEachIndexed { idx, f ->
+            f.apply(p)?.items?.forEach { it2 ->
+                for (q in it2.startOffset until it2.endOffset) {
+                    owner[q] = idx
+                    itemText[q] = p.substring(it2.startOffset, it2.endOffset)
+                }
+            }
+        }
+        val spans = mutableListOf<String>()
+        var i = 0
+        while (i < p.length) {
+            val o = owner[i]
+            if (o < 0) { i++; continue }
+            var j = i
+            while (j < p.length && owner[j] == o && itemText[j] == itemText[i]) j++
+            spans.add(itemText[i])
+            i = j
+        }
+        assertEquals("path must be a single link, not split before the file name", listOf(p), spans)
     }
 
     @Test

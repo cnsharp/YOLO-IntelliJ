@@ -1,7 +1,10 @@
 package com.cnsharp.yolo.panel
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.psi.search.FilenameIndex
+import com.intellij.psi.search.GlobalSearchScope
 import com.jediterm.terminal.model.hyperlinks.HyperlinkFilter
 import com.jediterm.terminal.model.hyperlinks.LinkInfo
 import com.jediterm.terminal.model.hyperlinks.LinkResult
@@ -40,11 +43,12 @@ class FileLinkFilter(
     override fun apply(text: String): LinkResult? {
         if (text.isBlank() || isDiffLine(text)) {
             // A blank or diff line breaks the pending *prefix* chain (so a later line can't be mistaken
-            // for its continuation). It must NOT clear `lastCompletedPath`: a completed wrap's head rows
-            // stay clickable even after the terminal prints blank/other lines, and clearing it here would
-            // turn those head links into dead links. `lastCompletedPath` is only cleared when a *new* wrap
-            // chain actually begins (see the fresh-head-link branch below).
+            // for its continuation). It must NOT clear `lastCompletedPath`/`lastCompletedBare`: a completed
+            // wrap's head rows stay clickable even after the terminal prints blank/other lines, and clearing
+            // it here would turn those head links into dead links. They are only cleared when a *new* wrap
+            // chain actually begins (see the fresh-head-link branches below).
             wrapState?.pendingPath = ""
+            wrapState?.pendingBareName = ""
             wrapState?.continuationSpan = null
             return null
         }
@@ -60,6 +64,12 @@ class FileLinkFilter(
         val prefix = wrapState?.pendingPath ?: ""
         wrapState?.pendingPath = ""
         wrapState?.continuationSpan = null
+
+        // Separate pending fragment for *bare* (path-less) names wrapped mid-name (e.g. `AccountD` of
+        // `AccountDataMigrationDispatcher.java`). Tracked independently of `pendingPath` because the
+        // reconstruction uses STACK_BARE_PATTERN, not PATH_PATTERN.
+        val barePrefix = wrapState?.pendingBareName ?: ""
+        wrapState?.pendingBareName = ""
 
         if (prefix.isNotEmpty()) {
             val trimmed = text.trimStart()
@@ -125,7 +135,62 @@ class FileLinkFilter(
                 }
             }
         }
-        // --- End hard-wrap reconstruction ---
+        // --- Bare-name hard-wrap reconstruction ---
+        // Same idea as the path block above, but for path-less file names the terminal hard-wrapped
+        // mid-name, matched by STACK_BARE_PATTERN rather than PATH_PATTERN (which requires a directory
+        // prefix). Example:
+        //     AccountD
+        //     ataMigrationDispatcher.java:18
+        // The head `AccountD` is a bare fragment with no extension/line; the continuation completes it to
+        // `AccountDataMigrationDispatcher.java:18`. Every row — including the head — must navigate to the
+        // reconstructed name.
+        if (barePrefix.isNotEmpty()) {
+            val trimmed = text.trimStart()
+            val leading = text.length - trimmed.length
+            val combined = barePrefix + trimmed
+            val bm = STACK_BARE_PATTERN.matcher(combined)
+            var done = false
+            while (bm.find()) {
+                if (bm.start() < barePrefix.length && bm.end() > barePrefix.length) {
+                    val name = bm.group(1)
+                    val lineNum = bm.group(2)?.toIntOrNull()
+                    val col = bm.group(3)?.toIntOrNull()
+                    // Record completion both per-head (keyed by this line's inherited prefix) and chain-wide.
+                    wrapState?.completedBares?.set(barePrefix, WrapState.CompletedPath(name, lineNum, col))
+                    wrapState?.lastCompletedBare = WrapState.CompletedPath(name, lineNum, col)
+                    val link = yoloHyperlink(project) {
+                        val file = resolve(name) ?: return@yoloHyperlink
+                        val p = project ?: return@yoloHyperlink
+                        openFileAt(p, file, lineNum, col)
+                    }
+                    val tailStart = leading
+                    val tailEnd = leading + (bm.end() - barePrefix.length)
+                    if (tailEnd <= text.length) {
+                        items.add(LinkResultItem(tailStart, tailEnd, link))
+                        wrapState?.continuationSpan = tailStart until tailEnd
+                    }
+                    done = true
+                    break
+                }
+            }
+            if (!done) {
+                // Still wrapping (no complete name yet): accumulate the prefix and highlight the new
+                // continuation fragment so even an intermediate row is clickable.
+                val reachesEnd = text.substring(trimmed.length).isBlank()
+                if (reachesEnd && !combined.contains('.')) {
+                    wrapState?.pendingBareName = combined
+                    val link = yoloHyperlink(project) {
+                        val completed = wrapState?.lastCompletedBare ?: wrapState?.completedBares?.get(combined)
+                        val name = completed?.path ?: combined
+                        val file = resolve(name) ?: return@yoloHyperlink
+                        val p = project ?: return@yoloHyperlink
+                        openFileAt(p, file, completed?.line, completed?.column)
+                    }
+                    items.add(LinkResultItem(leading, text.length, link))
+                }
+            }
+        }
+        // --- End bare-name hard-wrap reconstruction ---
 
         // Quoted paths first (may contain spaces, e.g. `"/path with space/Bar.kt":5`). Their full spans are
         // recorded so the unquoted pass below can suppress a *sub-path* that falls inside the quotes — e.g.
@@ -256,6 +321,32 @@ class FileLinkFilter(
             items.add(LinkResultItem(m.start(1), m.end(), link))
         }
 
+        // --- Bare-name head detection ---
+        // A standalone, capitalized identifier at end-of-line with no dot/`:line` is the head fragment of a
+        // bare file name the terminal wrapped mid-name (e.g. `AccountD`). Highlight it now; its link
+        // navigates to whatever the continuation completes it to (`lastCompletedBare`, set on the next
+        // line), falling back to the fragment itself until then. Only when this line is a genuine fresh head
+        // (neither a path nor a bare continuation is pending) — otherwise a continuation line would wrongly
+        // re-mark its own fragment.
+        if (prefix.isEmpty() && barePrefix.isEmpty() && !text.contains('/') && !text.contains('\\')) {
+            val bh = BARE_HEAD_PATTERN.matcher(text)
+            if (bh.find()) {
+                val tok = bh.group(1)
+                // A new bare wrap chain begins: drop any completion left by a previous chain.
+                wrapState?.lastCompletedBare = null
+                wrapState?.pendingBareName = tok
+                val link = yoloHyperlink(project) {
+                    val completed = wrapState?.lastCompletedBare ?: wrapState?.completedBares?.get(tok)
+                    val name = completed?.path ?: tok
+                    val file = resolve(name) ?: return@yoloHyperlink
+                    val p = project ?: return@yoloHyperlink
+                    openFileAt(p, file, completed?.line, completed?.column)
+                }
+                items.add(LinkResultItem(bh.start(1), bh.end(1), link))
+            }
+        }
+        // --- End bare-name head detection ---
+
         return if (items.isEmpty()) null else LinkResult(items)
     }
 
@@ -274,7 +365,20 @@ class FileLinkFilter(
         for (root in ProjectRootManager.getInstance(project).contentRoots) {
             candidates += File(root.path, raw)
         }
-        return candidates.firstOrNull { it.isFile }
+        val direct = candidates.firstOrNull { it.isFile }
+        if (direct != null) return direct
+        // Path-less bare name (e.g. a hard-wrapped `AccountDataMigrationDispatcher.java`): resolve by file
+        // name across the project's indexed files, so the link opens the real file even with no directory
+        // prefix. Deferred to click time (already on the EDT, but the index query needs a read action).
+        if (!raw.contains('/') && !raw.contains('\\')) {
+            val found = ReadAction.compute<File?, Exception> {
+                FilenameIndex.getVirtualFilesByName(raw, GlobalSearchScope.projectScope(project))
+                    .firstOrNull { !it.isDirectory }
+                    ?.let { File(it.path) }
+            }
+            if (found != null) return found
+        }
+        return null
     }
 
     /**

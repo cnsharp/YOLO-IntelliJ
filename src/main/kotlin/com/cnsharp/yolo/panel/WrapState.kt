@@ -60,6 +60,29 @@ class WrapState {
     val completedPaths: MutableMap<String, CompletedPath> = HashMap()
 
     /**
+     * Like [pendingPath] but for *bare* (path-less) file-name fragments the terminal hard-wrapped
+     * mid-name — e.g. the `AccountD` of a split `AccountDataMigrationDispatcher.java:18`. These are matched
+     * by `STACK_BARE_PATTERN` (not `PATH_PATTERN`, which demands a directory prefix), so they need their
+     * own reconstruction in [FileLinkFilter]. Set on a head line, consumed (and cleared) on the next.
+     */
+    var pendingBareName: String = ""
+
+    /**
+     * Head bare-name fragment -> the full file name the continuation completed it to (same purpose as
+     * [completedPaths] but for bare names). The head row is highlighted before the continuation is known,
+     * so its link looks the full name up here at click time.
+     */
+    val completedBares: MutableMap<String, CompletedPath> = HashMap()
+
+    /**
+     * The most recent bare name a wrap chain completed to, set when a continuation line with an
+     * extension/`:line` finishes the reconstruction. Head rows across the *whole* bare chain navigate to
+     * this. Lifetime mirrors [lastCompletedPath]: cleared only when a *new* bare wrap chain begins, never
+     * on every line or on a blank/diff line (so head rows stay clickable after following output).
+     */
+    var lastCompletedBare: CompletedPath? = null
+
+    /**
      * The most recent path a wrap chain completed to (the full file plus optional line/column), set when a
      * continuation line with an extension/`:line` finishes the reconstruction. Head links across the *whole*
      * chain — not just the immediate predecessor — navigate to this, so a multi-line wrap no longer leaves
