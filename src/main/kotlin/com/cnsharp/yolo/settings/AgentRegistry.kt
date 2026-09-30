@@ -71,8 +71,13 @@ object AgentRegistry {
     /** The install specification for the agent, or null if it declares none (custom tools, unknown). */
     fun installFor(key: String): InstallSpec? = lookupByKey(key)?.install
 
-    /** Returns the classpath icon path, or null if the agent is unknown or has no icon. */
-    fun iconFor(id: String): String? = byIdMap[id.lowercase()]?.icon?.takeIf { it.isNotBlank() }
+    /** Returns the classpath icon path, or null if the agent is unknown or has no icon.
+     *  agents.json stores the icon as a bare filename (e.g. `claude.svg`); the bundled-icons
+     *  root differs per end, so IntelliJ prepends its own `/icons/agents/` here. */
+    fun iconFor(id: String): String? {
+        val file = byIdMap[id.lowercase()]?.icon?.takeIf { it.isNotBlank() } ?: return null
+        return if (file.startsWith("/")) file else "/icons/agents/$file"
+    }
 
     private fun load(): List<AgentDef> {
         return try {
