@@ -503,5 +503,250 @@
       "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget",
       "updateCmd": "oh-my-posh upgrade"
     }
+  },
+  {
+    "id": "agoragentic",
+    "baseArgs": "",
+    "displayName": "Agoragentic",
+    "command": "agoragentic-mcp",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "agoragentic.png",
+    "url": "https://agoragentic.com",
+    "install": {
+      "type": "npm",
+      "pkg": "agoragentic-mcp"
+    }
+  },
+  {
+    "id": "cortex-code",
+    "baseArgs": "",
+    "displayName": "Cortex Code",
+    "command": "cortex",
+    "skipFlag": "--dangerously-allow-all-tool-calls",
+    "resumeFlag": "-r",
+    "icon": "cortex-code.png",
+    "url": "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh",
+      "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex"
+    }
+  },
+  {
+    "id": "corust-agent",
+    "baseArgs": "",
+    "displayName": "Corust Agent",
+    "command": "corust",
+    "skipFlag": "",
+    "resumeFlag": "resume",
+    "icon": "corust-agent.svg",
+    "url": "https://corust.ai/",
+    "install": {
+      "type": "brew",
+      "pkg": "Corust-ai/cli/corust"
+    }
+  },
+  {
+    "id": "crow-cli",
+    "baseArgs": "run -i",
+    "displayName": "Crow CLI",
+    "command": "crow-cli",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "crow-cli.svg",
+    "url": "https://crow-ai.dev",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://crow-ai.dev/install.sh | bash",
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\""
+    }
+  },
+  {
+    "id": "deepagents",
+    "baseArgs": "",
+    "displayName": "DeepAgents",
+    "command": "deepagents-acp",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "deepagents.svg",
+    "url": "https://docs.langchain.com/oss/javascript/deepagents/overview",
+    "install": {
+      "type": "npm",
+      "pkg": "deepagents-acp"
+    }
+  },
+  {
+    "id": "dirac",
+    "baseArgs": "",
+    "displayName": "Dirac",
+    "command": "dirac",
+    "skipFlag": "--yolo",
+    "resumeFlag": "--continue",
+    "icon": "dirac.svg",
+    "url": "https://dirac.run",
+    "install": {
+      "type": "npm",
+      "pkg": "dirac-cli"
+    }
+  },
+  {
+    "id": "dimcode",
+    "baseArgs": "",
+    "displayName": "DimCode",
+    "command": "dim",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "dimcode.png",
+    "url": "https://dimcode.dev/docs/acp.html",
+    "install": {
+      "type": "npm",
+      "pkg": "dimcode"
+    }
+  },
+  {
+    "id": "fast-agent",
+    "baseArgs": "",
+    "displayName": "Fast Agent",
+    "command": "fast-agent",
+    "skipFlag": "",
+    "resumeFlag": "--resume",
+    "icon": "fast-agent.svg",
+    "url": "https://fast-agent.ai",
+    "install": {
+      "type": "pip",
+      "pkg": "fast-agent-mcp"
+    }
+  },
+  {
+    "id": "glm-agent",
+    "baseArgs": "",
+    "displayName": "GLM Agent",
+    "command": "glm-acp-agent",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "glm-agent.svg",
+    "url": "https://github.com/stefandevo/glm-acp-agent",
+    "install": {
+      "type": "npm",
+      "pkg": "glm-acp-agent"
+    }
+  },
+  {
+    "id": "harn",
+    "baseArgs": "",
+    "displayName": "Harn",
+    "command": "harn",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "harn.svg",
+    "url": "https://harnlang.com",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://harnlang.com/install.sh | sh",
+      "cmdWin": "irm https://harnlang.com/install.ps1 | iex"
+    }
+  },
+  {
+    "id": "junie",
+    "baseArgs": "",
+    "displayName": "Junie",
+    "command": "junie",
+    "skipFlag": "--brave",
+    "resumeFlag": "--resume",
+    "icon": "junie.svg",
+    "url": "https://junie.jetbrains.com",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://junie.jetbrains.com/install.sh | bash",
+      "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex"
+    }
+  },
+  {
+    "id": "minion-code",
+    "baseArgs": "",
+    "displayName": "Minion Code",
+    "command": "minion-code",
+    "skipFlag": "--dangerously-skip-permissions",
+    "resumeFlag": "--continue",
+    "icon": "minion-code.svg",
+    "url": "https://github.com/femto/minion-code",
+    "install": {
+      "type": "pip",
+      "pkg": "minion-code"
+    }
+  },
+  {
+    "id": "nova",
+    "baseArgs": "",
+    "displayName": "Nova",
+    "command": "nova",
+    "skipFlag": "--unleash",
+    "resumeFlag": "--continue",
+    "icon": "nova.svg",
+    "url": "https://www.compassap.ai/portfolio/nova.html",
+    "install": {
+      "type": "npm",
+      "pkg": "@compass-ai/nova"
+    }
+  },
+  {
+    "id": "poolside",
+    "baseArgs": "",
+    "displayName": "Poolside",
+    "command": "pool",
+    "skipFlag": "--unsafe-auto-allow",
+    "resumeFlag": "-r",
+    "icon": "poolside.svg",
+    "url": "https://poolside.ai",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://downloads.poolside.ai/pool/install.sh | sh",
+      "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex"
+    }
+  },
+  {
+    "id": "sigit",
+    "baseArgs": "",
+    "displayName": "siGit Code",
+    "command": "sigit",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "sigit.png",
+    "url": "https://smbcloud.xyz",
+    "install": {
+      "type": "npm",
+      "pkg": "@getsigit/sigit"
+    }
+  },
+  {
+    "id": "stakpak",
+    "baseArgs": "",
+    "displayName": "Stakpak",
+    "command": "stakpak",
+    "skipFlag": "",
+    "resumeFlag": "",
+    "icon": "stakpak.png",
+    "url": "https://stakpak.dev",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -sSL https://stakpak.dev/install.sh | sh",
+      "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\""
+    }
+  },
+  {
+    "id": "vtcode",
+    "baseArgs": "",
+    "displayName": "VT Code",
+    "command": "vtcode",
+    "skipFlag": "--dangerously-skip-permissions",
+    "resumeFlag": "continue",
+    "icon": "vtcode.png",
+    "url": "https://github.com/vinhnx/VTCode",
+    "install": {
+      "type": "shell",
+      "cmd": "curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash",
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash\""
+    }
   }
 ]
