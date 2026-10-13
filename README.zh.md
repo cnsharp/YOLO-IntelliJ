@@ -251,6 +251,23 @@ localIdeaPath=/Applications/IntelliJ IDEA.app
 | ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="src/main/resources/icons/agents/ante.svg" height="20" alt="Ante"></a> |
 | codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="src/main/resources/icons/agents/codebuff.png" height="20" alt="Codebuff"></a> |
 | omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="src/main/resources/icons/agents/omp.svg" height="20" alt="OMP"></a> |
+| agoragentic | Agoragentic | `agoragentic-mcp` | <a href="https://agoragentic.com"><img src="src/main/resources/icons/agents/agoragentic.png" height="20" alt="Agoragentic"></a> |
+| cortex-code | Cortex Code | `cortex` | <a href="https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code"><img src="src/main/resources/icons/agents/cortex-code.png" height="20" alt="Cortex Code"></a> |
+| corust-agent | Corust Agent | `corust` | <a href="https://corust.ai/"><img src="src/main/resources/icons/agents/corust-agent.svg" height="20" alt="Corust Agent"></a> |
+| crow-cli | Crow CLI | `crow-cli` | <a href="https://crow-ai.dev"><img src="src/main/resources/icons/agents/crow-cli.svg" height="20" alt="Crow CLI"></a> |
+| deepagents | DeepAgents | `deepagents-acp` | <a href="https://docs.langchain.com/oss/javascript/deepagents/overview"><img src="src/main/resources/icons/agents/deepagents.svg" height="20" alt="DeepAgents"></a> |
+| dirac | Dirac | `dirac` | <a href="https://dirac.run"><img src="src/main/resources/icons/agents/dirac.svg" height="20" alt="Dirac"></a> |
+| dimcode | DimCode | `dim` | <a href="https://dimcode.dev/docs/acp.html"><img src="src/main/resources/icons/agents/dimcode.png" height="20" alt="DimCode"></a> |
+| fast-agent | Fast Agent | `fast-agent` | <a href="https://fast-agent.ai"><img src="src/main/resources/icons/agents/fast-agent.svg" height="20" alt="Fast Agent"></a> |
+| glm-agent | GLM Agent | `glm-acp-agent` | <a href="https://github.com/stefandevo/glm-acp-agent"><img src="src/main/resources/icons/agents/glm-agent.svg" height="20" alt="GLM Agent"></a> |
+| harn | Harn | `harn` | <a href="https://harnlang.com"><img src="src/main/resources/icons/agents/harn.svg" height="20" alt="Harn"></a> |
+| junie | Junie | `junie` | <a href="https://junie.jetbrains.com"><img src="src/main/resources/icons/agents/junie.svg" height="20" alt="Junie"></a> |
+| minion-code | Minion Code | `minion-code` | <a href="https://github.com/femto/minion-code"><img src="src/main/resources/icons/agents/minion-code.svg" height="20" alt="Minion Code"></a> |
+| nova | Nova | `nova` | <a href="https://www.compassap.ai/portfolio/nova.html"><img src="src/main/resources/icons/agents/nova.svg" height="20" alt="Nova"></a> |
+| poolside | Poolside | `pool` | <a href="https://poolside.ai"><img src="src/main/resources/icons/agents/poolside.svg" height="20" alt="Poolside"></a> |
+| sigit | siGit Code | `sigit` | <a href="https://smbcloud.xyz"><img src="src/main/resources/icons/agents/sigit.png" height="20" alt="siGit Code"></a> |
+| stakpak | Stakpak | `stakpak` | <a href="https://stakpak.dev"><img src="src/main/resources/icons/agents/stakpak.png" height="20" alt="Stakpak"></a> |
+| vtcode | VT Code | `vtcode` | <a href="https://github.com/vinhnx/VTCode"><img src="src/main/resources/icons/agents/vtcode.png" height="20" alt="VT Code"></a> |
 
 任何未列出的工具都可以作为自定义工具正常使用;只需自己填好它的标志即可。
 
