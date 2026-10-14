@@ -749,6 +749,8 @@ private class YoloPanel(
      * terminal's TTY connector — the exact same path every keystroke takes — so the agent sees precisely
      * what a user would have typed. Any pre-existing [TransferHandler] (e.g. JediTerm's paste) is preserved
      * by delegating non-file flavors to it.
+     *
+     * The PTY write is pushed to a pooled thread so a stalled stdin pipe can never block the UI thread.
      */
     private fun installFileDrop(widget: YoloJediTermWidget) {
         val delegate = widget.transferHandler
@@ -766,8 +768,11 @@ private class YoloPanel(
                         .takeIf { it.isNotEmpty() }
                         ?.joinToString(" ") { quotePath(it) }
                     if (text != null) {
-                        runCatching { widget.ttyConnector?.write(text) }
-                            .onFailure { LOG.warn("${Yolo.NAME}: failed to insert dropped file path", it) }
+                        val connector = widget.ttyConnector
+                        ApplicationManager.getApplication().executeOnPooledThread {
+                            runCatching { connector?.write(text) }
+                                .onFailure { LOG.warn("${Yolo.NAME}: failed to insert dropped file path", it) }
+                        }
                     }
                     return true
                 }
