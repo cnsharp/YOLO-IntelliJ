@@ -70,12 +70,13 @@ internal class TypedInputGuard {
                 from = at + segment.length
             }
         }
-        // Self-heal against desync: if we are tracking input but cannot find it on this line (the
-        // byte-stream→buffer reconstruction drifted — e.g. a submit byte the branch above did not clear,
-        // or an IME/escape sequence we ignored), suppress the whole line rather than leave stray links
-        // under the caret. While typing, the active line is always the input box, so blanketing it is
-        // correct; output lines are only ever seen here when [typed] is empty (handled by the guard above).
-        if (spans.isEmpty() && line.isNotEmpty()) spans += 0 until line.length
+        // A dropped file writes its path to the PTY without a trailing newline, so [typed] stays
+        // non-empty until the next Enter. The substring match above already suppresses the real input
+        // spans (e.g. the dropped path echoed on the input line); we must NOT blanket the whole line when
+        // the pending text isn't found, or every agent output line printed before that Enter would lose
+        // all of its links. The original blanket was meant to hide stray links during a desync (a submit
+        // byte the [fold] branch didn't clear, or an IME/escape we ignored) — that rare case may now keep
+        // a stray link under the caret, which is the lesser harm versus suppressing all real output links.
         return spans
     }
 
