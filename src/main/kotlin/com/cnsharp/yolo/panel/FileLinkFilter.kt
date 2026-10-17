@@ -354,17 +354,11 @@ class FileLinkFilter(
      *  Called from the click handler (EDT), wrapped in a read action because it touches the project model. */
     private fun resolve(raw: String): File? {
         val project = this.project ?: return null
-        val candidates = mutableListOf<File>()
-        when {
-            raw.startsWith("file://") -> candidates += File(raw.removePrefix("file://"))
-            raw.startsWith("~/") -> candidates += File(System.getProperty("user.home"), raw.removePrefix("~/"))
-            raw == "~" -> candidates += File(System.getProperty("user.home"))
-        }
-        candidates += File(raw)
-        candidates += File(baseDir, raw)
+        val anchors = mutableListOf(File(baseDir))
         for (root in ProjectRootManager.getInstance(project).contentRoots) {
-            candidates += File(root.path, raw)
+            anchors += File(root.path)
         }
+        val candidates = anchorCandidates(raw, anchors)
         val direct = candidates.firstOrNull { it.isFile }
         if (direct != null) return direct
         // Path-less bare name (e.g. a hard-wrapped `AccountDataMigrationDispatcher.java`): resolve by file
@@ -462,3 +456,44 @@ class FileLinkFilter(
  * or [resolve] would look for a doubled `Foo.kt.kt` and find nothing.
  */
 internal fun fileLinkTarget(raw: String, ext: String?): String = raw
+
+/**
+ * Build the candidate files [FileLinkFilter.resolve] tries, for a possibly-relative [raw], against a list of
+ * anchor directories (the agent working dir + every content root). Exposed as `internal` so it can be
+ * unit-tested without a live [Project].
+ *
+ * For each anchor we try [raw] as-is, then *progressively drop leading path segments* and retry. This
+ * navigates repo-relative references whose leading segment(s) are a redundant prefix relative to an anchor —
+ * e.g. a Maven module name doubled because the anchor *is* that module: `module/src/Foo.java` against anchor
+ * `.../module` resolves once the leading `module/` is stripped, and `module/sub/src/Foo.java` against anchor
+ * `.../module/sub` resolves once both are stripped. The strip is generic (one segment at a time), not keyed to
+ * the anchor's own name, so it also covers nested-module and deeper prefix mismatches.
+ *
+ * Absolute paths, drive letters, `file://` URLs, and `~/`/`~` are left untouched so we never invent spurious
+ * relative candidates from them. Every candidate is only ever used if it physically `isFile` (see [resolve]), so
+ * a stripped segment can only *add* a working link, never break an existing one or override an already-resolving
+ * candidate (those are tried first, in order).
+ */
+internal fun anchorCandidates(raw: String, anchors: List<File>): List<File> {
+    val candidates = mutableListOf<File>()
+    when {
+        raw.startsWith("file://") -> candidates += File(raw.removePrefix("file://"))
+        raw.startsWith("~/") -> candidates += File(System.getProperty("user.home"), raw.removePrefix("~/"))
+        raw == "~" -> candidates += File(System.getProperty("user.home"))
+    }
+    candidates += File(raw)
+
+    val isAbsolute = raw.startsWith('/') || raw.startsWith('\\') ||
+            raw.startsWith("file://") || raw.startsWith("~/") || raw == "~" ||
+            Regex("^[A-Za-z]:[\\\\/]").containsMatchIn(raw)
+    if (!isAbsolute) {
+        val segs = raw.replace('\\', '/').split('/')
+        for (anchor in anchors) {
+            for (drop in 0 until segs.size) {
+                val rel = segs.subList(drop, segs.size).joinToString("/")
+                if (rel.isNotEmpty()) candidates += File(anchor, rel)
+            }
+        }
+    }
+    return candidates
+}

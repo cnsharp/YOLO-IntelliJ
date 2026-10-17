@@ -5,6 +5,8 @@ import com.jediterm.terminal.model.hyperlinks.HyperlinkFilter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 /**
  * Exercises [FileLinkFilter.apply] — the pure link-matching logic — against the reported false-link
@@ -286,6 +288,29 @@ class FileLinkFilterTest {
             tail
         )
         assertEquals(listOf("rTransitionContext.java"), linked)
+    }
+
+    // ---- Regression: `.sql` (and other SQL-family) references must link ----
+    // PROGRAMMING_EXT previously omitted `sql`, so a `.sql` reference — single line or hard-wrapped — was
+    // never recognized as a file: the standalone line produced no link, and a wrapped reference left the head
+    // row a dead fragment while the continuation (the actual filename) stayed unlinked. The user reported
+    // exactly this ("第二行没链接上") for a wrapped `/Users/.../some_table.sql`.
+
+    @Test
+    fun testSqlPathLinksOnOneLine() {
+        assertEquals(listOf("foo/bar/some_table.sql"), linked("see foo/bar/some_table.sql here"))
+    }
+
+    @Test
+    fun testSqlPathHardWrapReconstructed() {
+        // Mirrors the reported case: `/Users/.../some_` wraps, the indented continuation `table.sql`
+        // must link as the tail of the reconstructed full path (not be dropped).
+        val tail = "    table.sql"
+        val linked = linkedWithState(
+            "/Users/cnsharp/IdeaProjects/foo/bar/some_",
+            tail
+        )
+        assertEquals(listOf("table.sql"), linked)
     }
 
     @Test
@@ -754,5 +779,100 @@ class FileLinkFilterTest {
         )
         assertTrue("truncated head (directory fragment) must not be linked", head.isEmpty())
         assertEquals(listOf("ChannelConfigSyncListener.java"), tail)
+    }
+
+    // ---- Regression: a repo-relative path whose leading segment is itself a content root/module must
+    // still resolve. The agent prints `foo-migrate/src/.../Foo.java`; when `foo-migrate` is opened
+    // as its own module/content root, the naive `contentRoot/foo-migrate/...` does not exist, so the
+    // link appeared but navigated nowhere. `anchorCandidates` now drops the redundant leading segment. ----
+
+    @Test
+    fun testAnchorCandidatesDropsRedundantLeadingModuleSegment() {
+        val root = Files.createTempDirectory("yolo-link-test").toFile()
+        try {
+            // Simulate a module/content root named exactly like the path's leading segment.
+            val moduleDir = File(root, "foo-migrate")
+            val realFile = File(moduleDir, "src/main/java/com/cnsharp/foo/migrate/fbservice/accrued/BarService.java")
+            realFile.parentFile.mkdirs()
+            realFile.writeText("// marker")
+            val anchors = listOf(moduleDir) // the only content root
+            val raw = "foo-migrate/src/main/java/com/cnsharp/foo/migrate/fbservice/accrued/BarService.java"
+
+            // Without the drop, only `moduleDir/foo-migrate/...` is tried — it does not exist.
+            val naive = listOf(File(moduleDir, raw))
+            assertTrue("sanity: naive resolution must miss", naive.none { it.isFile })
+
+            // With the drop, `moduleDir/...` (segment stripped) is found.
+            val candidates = anchorCandidates(raw, anchors)
+            val hit = candidates.firstOrNull { it.isFile }
+            assertEquals("the redundant leading segment must be stripped so the file resolves", realFile, hit)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testAnchorCandidatesKeepsNormalRelativePath() {
+        // A path whose leading segment is NOT a content-root name still resolves via `anchor/raw`.
+        val root = Files.createTempDirectory("yolo-link-test2").toFile()
+        try {
+            val anchor = File(root, "repo")
+            val realFile = File(anchor, "src/main/java/com/x/Foo.kt")
+            realFile.parentFile.mkdirs()
+            realFile.writeText("// marker")
+            val raw = "src/main/java/com/x/Foo.kt"
+            val hit = anchorCandidates(raw, listOf(anchor)).firstOrNull { it.isFile }
+            assertEquals(realFile, hit)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testUserWrappedModuleRelativePathReconstructsAndLinksTail() {
+        // Exact reported case: a repo-relative module path hard-wrapped mid-name with indentation.
+        //   foo-migrate/src/main/java/com/cnsharp/foo/migrate/fbservice/accrued/Acc
+        //       ruedFeeDataMigrationService.java
+        // The wrap reconstruction must keep the full path and link the continuation's tail.
+        val state = WrapState()
+        val filter = FileLinkFilter(null, "/tmp/agent-working-dir", state)
+        val head = "foo-migrate/src/main/java/com/cnsharp/foo/migrate/fbservice/accrued/Acc"
+        filter.apply(head)
+        assertEquals("head fragment must be stored for continuation", head, state.pendingPath)
+        val tail = "    ruedFeeDataMigrationService.java"
+        val tailLinked = filter.apply(tail)
+            ?.items
+            ?.map { tail.substring(it.startOffset, it.endOffset) }
+            .orEmpty()
+        assertEquals(listOf("ruedFeeDataMigrationService.java"), tailLinked)
+        assertEquals(
+            "reconstructed path must keep the full repo-relative path",
+            "foo-migrate/src/main/java/com/cnsharp/foo/migrate/fbservice/accrued/AccruedFeeDataMigrationService.java",
+            state.lastCompletedPath?.path
+        )
+    }
+
+    @Test
+    fun testAnchorCandidatesStripsMultipleLeadingSegments() {
+        // Generic, segment-by-segment strip (not keyed to the anchor name): the anchor is a *nested* module
+        // directory and the raw path repeats both leading segments. Dropping just the anchor name would miss;
+        // progressive stripping must drop two segments to land on the real file.
+        val root = Files.createTempDirectory("yolo-link-test3").toFile()
+        try {
+            val anchor = File(root, "module/sub")
+            val realFile = File(anchor, "src/main/java/com/x/Foo.kt")
+            realFile.parentFile.mkdirs()
+            realFile.writeText("// marker")
+            val raw = "module/sub/src/main/java/com/x/Foo.kt"
+
+            // Naive `anchor/raw` doubles the whole prefix and misses.
+            assertTrue("sanity: naive resolution must miss", listOf(File(anchor, raw)).none { it.isFile })
+
+            // Progressive stripping drops `module/`, then `sub/`, resolving at `anchor/src/...`.
+            val hit = anchorCandidates(raw, listOf(anchor)).firstOrNull { it.isFile }
+            assertEquals(realFile, hit)
+        } finally {
+            root.deleteRecursively()
+        }
     }
 }

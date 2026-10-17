@@ -25,7 +25,7 @@ internal const val MAX_MATCHES_PER_LINE = 50
  * Case-insensitive (matched via `(?i:…)` wherever the fragment is embedded).
  */
 // >>> YOLO_LINK_PATTERNS_START >>>
-internal const val PROGRAMMING_EXT: String = "kt|kts|java|scala|sc|groovy|gradle|py|pyi|pyw|rb|rake|php|pl|pm|lua|sh|bash|zsh|ksh|bat|cmd|ps1|psm1|psd1|js|jsx|mjs|cjs|ts|tsx|vue|html|htm|xhtml|css|scss|sass|less|styl|go|rs|c|h|cc|cpp|cxx|hpp|hxx|hh|cs|m|mm|swift|d|nim|zig|s|asm|ex|exs|clj|cljs|cljc|erl|hs|ml|mli|fs|fsx|fsi|jl|r|proto|sol|graphql|gql|xml|xsd|xsl|xslt|wsdl|json|json5|jsonc|yaml|yml|toml|ini|cfg|conf|config|properties|env|lock|csv|tsv|log|md|markdown|rst|txt|text|diff|patch|editorconfig|gitignore|dockerignore|tf|tfvars|feature|bnf|avsc|edn|iml|ipr|iws"
+internal const val PROGRAMMING_EXT: String = "kt|kts|java|scala|sc|groovy|gradle|py|pyi|pyw|rb|rake|php|pl|pm|lua|sh|bash|zsh|ksh|bat|cmd|ps1|psm1|psd1|js|jsx|mjs|cjs|ts|tsx|vue|html|htm|xhtml|css|scss|sass|less|styl|go|rs|c|h|cc|cpp|cxx|hpp|hxx|hh|cs|m|mm|swift|d|nim|zig|s|asm|ex|exs|clj|cljs|cljc|erl|hs|ml|mli|fs|fsx|fsi|jl|r|proto|sol|graphql|gql|sql|xml|xsd|xsl|xslt|wsdl|json|json5|jsonc|yaml|yml|toml|ini|cfg|conf|config|properties|env|lock|csv|tsv|log|md|markdown|rst|txt|text|diff|patch|editorconfig|gitignore|dockerignore|tf|tfvars|feature|bnf|avsc|edn|iml|ipr|iws"
 
 internal val PATH_PATTERN: Pattern = Pattern.compile("""(?<![\\/\w.])((?:(?:[A-Za-z]:[\\/]?)|[\\/]|[~][\\/]?|\\\\[A-Za-z0-9._\-]+(?:[\\/][A-Za-z0-9._\-]+)+|[A-Za-z0-9._\-]+[\\/])(?:[A-Za-z0-9._\-]+[\\/])*(?:[A-Za-z0-9._\-]+\.((?i:$PROGRAMMING_EXT))(?![\\/\w.])|[A-Za-z0-9._\-]+))(?::(\d+)(?:-(\d+))?(?::(\d+))?)?""")
 
