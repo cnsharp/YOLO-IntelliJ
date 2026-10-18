@@ -951,6 +951,7 @@ private class YoloPanel(
         val session = sessions[index]
         tabBar.remove(session.tabComp)
         contentArea.remove(session.widget)
+        val wasSelected = index == selectedIndex
         sessions.removeAt(index)
         runCatching { session.widget.close() }
         runCatching { session.process.destroyForcibly() }
@@ -958,8 +959,13 @@ private class YoloPanel(
             selectedIndex = -1
             cardLayout.show(contentArea, CARD_EMPTY)
         } else {
-            // Keep a neighbour selected after a middle removal (indices shifted, so clamp).
-            selectedIndex = selectedIndex.coerceIn(0, sessions.lastIndex)
+            // Removing a tab shifts every later session one position left. If the closed tab sat before the
+            // current selection, the selection must shift left too, or the wrong tab becomes active.
+            selectedIndex = when {
+                wasSelected -> selectedIndex.coerceIn(0, sessions.lastIndex)
+                index < selectedIndex -> selectedIndex - 1
+                else -> selectedIndex
+            }
             cardLayout.show(contentArea, sessions[selectedIndex].cardKey)
         }
         updateTabSelection()
