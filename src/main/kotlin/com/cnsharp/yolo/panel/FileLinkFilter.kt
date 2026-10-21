@@ -177,7 +177,16 @@ class FileLinkFilter(
                 // Still wrapping (no complete name yet): accumulate the prefix and highlight the new
                 // continuation fragment so even an intermediate row is clickable.
                 val reachesEnd = text.substring(trimmed.length).isBlank()
-                if (reachesEnd && !combined.contains('.')) {
+                // A genuine mid-name continuation must look like a file-name fragment: only ASCII
+                // letters, digits, underscores, and dashes. Sequences containing spaces, Unicode
+                // symbols (∴, ●, ─, CJK, …), or punctuation are prose/TUI lines — not hard-wrapped
+                // file names — and must not continue the chain. Without this guard `reachesEnd` is
+                // always true for lines with no leading whitespace (trimmed.length == text.length →
+                // text.substring(text.length) == ""), causing every subsequent line to be linked.
+                val looksLikeName = trimmed.all {
+                    it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it == '_' || it == '-'
+                }
+                if (reachesEnd && !combined.contains('.') && looksLikeName) {
                     wrapState?.pendingBareName = combined
                     val link = yoloHyperlink(project) {
                         val completed = wrapState?.lastCompletedBare ?: wrapState?.completedBares?.get(combined)
@@ -328,7 +337,11 @@ class FileLinkFilter(
         // line), falling back to the fragment itself until then. Only when this line is a genuine fresh head
         // (neither a path nor a bare continuation is pending) — otherwise a continuation line would wrongly
         // re-mark its own fragment.
-        if (prefix.isEmpty() && barePrefix.isEmpty() && !text.contains('/') && !text.contains('\\')) {
+        // TUI output (Claude Code tool-call labels, box-drawing borders, …) contains Unicode symbols
+        // such as ● ∴ └ that never appear in real code output. Guard on all-ASCII so a line like
+        // "● Bash" or "∴ Thought" is never mistaken for a hard-wrapped file-name head.
+        if (prefix.isEmpty() && barePrefix.isEmpty() && !text.contains('/') && !text.contains('\\')
+            && text.all { it.code < 128 }) {
             val bh = BARE_HEAD_PATTERN.matcher(text)
             if (bh.find()) {
                 val tok = bh.group(1)
