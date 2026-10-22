@@ -74,11 +74,12 @@ class AgentExtenderConfigurable : Configurable {
 
     /**
      * Terminal hyperlink color swatch: shows the current color and opens a standard color chooser on click.
-     * Background holds the selected color; text shows its hex; foreground flips for contrast.
+     * The button's text shows the hex value painted in the chosen color (foreground) over a neutral background,
+     * so the displayed swatch matches the color that will actually be applied.
      */
     private val linkColorButton = JButton().apply {
         addActionListener {
-            val chosen = JColorChooser.showDialog(this, message("settings.linkColor.title"), background)
+            val chosen = JColorChooser.showDialog(this, message("settings.linkColor.title"), linkColor)
             if (chosen != null) {
                 linkColor = chosen
                 modified = true
@@ -86,17 +87,18 @@ class AgentExtenderConfigurable : Configurable {
         }
     }
 
-    /** Selected terminal link color (alpha stripped, so it round-trips with the persisted RGB int). */
+    /** Selected terminal link color (alpha stripped, so it round-trips with the persisted RGB int).
+     *  Stored in [_linkColor]; the button shows the hex value in that color itself (its foreground) rather than a
+     *  fixed white/black, with a neutral background so the colored text stays legible. */
+    private var _linkColor: Color = Color(AgentExtenderSettings.DEFAULT_LINK_COLOR_RGB)
     private var linkColor: Color
-        get() = Color(linkColorButton.background.rgb and 0xFFFFFF)
+        get() = _linkColor
         set(value) {
-            linkColorButton.background = value
-            linkColorButton.foreground = if (isDark(value)) Color.WHITE else Color.BLACK
+            _linkColor = value
+            linkColorButton.foreground = value
+            linkColorButton.background = JBColor.background()
             linkColorButton.text = "#%06X".format(value.rgb and 0xFFFFFF)
         }
-
-    private fun isDark(c: Color): Boolean =
-        (0.299 * c.red + 0.587 * c.green + 0.114 * c.blue) < 128
 
     /** Settings checkbox mirroring [AgentExtenderSettings.State.skipWarningDismissed]: suppresses the
      *  "Skip permissions" launch warning when ticked. */
