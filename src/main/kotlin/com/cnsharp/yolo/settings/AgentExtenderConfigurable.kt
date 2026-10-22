@@ -109,6 +109,9 @@ class AgentExtenderConfigurable : Configurable {
     /** "Update": upgrades the selected agent to the latest version (or opens its site for shell/url agents).
      *  Disabled until a check reports an available update for the selected row. */
     private lateinit var updateButton: JButton
+    /** "Check Updates": scan installed agents for newer versions. Only meaningful for a selected, installed
+     *  agent, so it is disabled when no row is selected or the selected agent is not installed. */
+    private lateinit var checkUpdatesButton: JButton
     private var checking = false
     /** Guards the TableModelListener while we write transient update-status cells, so a check never flips "modified". */
     private var updatingStatus = false
@@ -183,6 +186,7 @@ class AgentExtenderConfigurable : Configurable {
         updateProvidersButtonState()
         updateInstallButtonState()
         updateUpdateButtonState()
+        updateCheckUpdatesButtonState()
 
         // Reflect any update statuses already cached (e.g. from the startup auto-check) and keep them live.
         updateListener?.let { AgentUpdateChecker.removeListener(it) }
@@ -372,7 +376,7 @@ class AgentExtenderConfigurable : Configurable {
                 app.invokeLater {
                     checking = false
                     updateUpdateButtonState()
-                    button.isEnabled = true
+                    updateCheckUpdatesButtonState()
                     // The scan finished, but the status line still reads "Checking updates…" (set above) and the
                     // listener's banner guard (`text.isBlank()`) suppressed the "N updates available" banner during
                     // the manual check. Surface the banner now if anything is available; otherwise clear the stale
@@ -388,7 +392,15 @@ class AgentExtenderConfigurable : Configurable {
                 }
             }
         }
+        checkUpdatesButton = button
         return button
+    }
+
+    /** Reflect the installed-agents set into the "Check Updates" button's enabled state.
+     *  The button scans every installed agent for a newer version, so it is enabled whenever at least one agent
+     *  is installed (independent of which row is selected), and disabled while a scan is running. */
+    private fun updateCheckUpdatesButtonState() {
+        checkUpdatesButton.isEnabled = InstalledAgents.installed().isNotEmpty() && !checking
     }
 
     /** "Update": upgrade the selected agent to the latest version. npm/pip/brew run their package-manager upgrade;
@@ -816,10 +828,12 @@ class AgentExtenderConfigurable : Configurable {
         // ...then refresh the cache and re-render only if the installed set actually changed.
         InstalledAgents.rescan(commands) { set ->
             toolsTable.setInstalled(flagsFor(commands, set))
-            // A finished install flips the row's status, so re-evaluate both action buttons: the Install
-            // button (now installed ⇒ disabled) and the Update button, which is gated on the installed-cache.
+            // A finished install flips the row's status, so re-evaluate the action buttons gated on the
+            // installed-cache: the Install button (now installed ⇒ disabled), the Update button, and the
+            // "Check Updates" button (enabled only while at least one agent is installed).
             updateInstallButtonState()
             updateUpdateButtonState()
+            updateCheckUpdatesButtonState()
         }
     }
 
@@ -1007,6 +1021,7 @@ class AgentExtenderConfigurable : Configurable {
             reflectUpdateStatuses(AgentUpdateChecker.snapshot())
             updateInstallButtonState()
             updateUpdateButtonState()
+            updateCheckUpdatesButtonState()
         } finally {
             rebuilding = false
             modified = false
