@@ -213,65 +213,9 @@ localIdeaPath=/Applications/IntelliJ IDEA.app
 
 ### 已知智能体
 
-此列表只是方便起见 —— 并非唯一真相来源。最终运行的是设置里所写的内容。
+此列表仅供参考，并非唯一权威来源。实际运行以设置中的配置为准。
 
-| id | 显示名 | 命令 | 官网 |
-|---|---|---|---|
-| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="src/main/resources/icons/agents/claude.svg" height="20" alt="Claude Code"></a> |
-| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="src/main/resources/icons/agents/codex.svg" height="20" alt="Codex"></a> |
-| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="src/main/resources/icons/agents/cursor.svg" height="20" alt="Cursor"></a> |
-| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="src/main/resources/icons/agents/copilot.svg" height="20" alt="GitHub Copilot"></a> |
-| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="src/main/resources/icons/agents/opencode.svg" height="20" alt="OpenCode"></a> |
-| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="src/main/resources/icons/agents/aider.svg" height="20" alt="Aider"></a> |
-| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="src/main/resources/icons/agents/cline.svg" height="20" alt="Cline"></a> |
-| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="src/main/resources/icons/agents/continue.svg" height="20" alt="Continue"></a> |
-| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="src/main/resources/icons/agents/openclaw.svg" height="20" alt="OpenClaw"></a> |
-| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="src/main/resources/icons/agents/kiro.svg" height="20" alt="Kiro"></a> |
-| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="src/main/resources/icons/agents/goose.svg" height="20" alt="Goose"></a> |
-| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="src/main/resources/icons/agents/crush.png" height="20" alt="Charm Crush"></a> |
-| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="src/main/resources/icons/agents/amp.svg" height="20" alt="Amp"></a> |
-| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="src/main/resources/icons/agents/kimi.svg" height="20" alt="Kimi"></a> |
-| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="src/main/resources/icons/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
-| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="src/main/resources/icons/agents/trae.svg" height="20" alt="TraeCode"></a> |
-| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="src/main/resources/icons/agents/codebuddy.svg" height="20" alt="CodeBuddy"></a> |
-| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="src/main/resources/icons/agents/qoder.svg" height="20" alt="Qoder"></a> |
-| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="src/main/resources/icons/agents/devin.svg" height="20" alt="Devin"></a> |
-| grok | Grok | `grok` | <a href="https://grok.com/"><img src="src/main/resources/icons/agents/grok.svg" height="20" alt="Grok"></a> |
-| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="src/main/resources/icons/agents/antigravity.png" height="20" alt="Antigravity"></a> |
-| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="src/main/resources/icons/agents/mistral-vibe.svg" height="20" alt="Mistral Vibe"></a> |
-| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="src/main/resources/icons/agents/kilo.svg" height="20" alt="Kilo Code"></a> |
-| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="src/main/resources/icons/agents/hermes.png" height="20" alt="Hermes"></a> |
-| pi | Pi | `pi` | <a href="https://pi.dev/"><img src="src/main/resources/icons/agents/pi.svg" height="20" alt="Pi"></a> |
-| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="src/main/resources/icons/agents/droid.svg" height="20" alt="Droid"></a> |
-| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="src/main/resources/icons/agents/aug.svg" height="20" alt="Auggie"></a> |
-| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="src/main/resources/icons/agents/rovo.svg" height="20" alt="Rovo Dev"></a> |
-| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="src/main/resources/icons/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
-| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="src/main/resources/icons/agents/autohand.svg" height="20" alt="Autohand"></a> |
-| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="src/main/resources/icons/agents/command-code.svg" height="20" alt="Command Code"></a> |
-| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="src/main/resources/icons/agents/ante.svg" height="20" alt="Ante"></a> |
-| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="src/main/resources/icons/agents/codebuff.png" height="20" alt="Codebuff"></a> |
-| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="src/main/resources/icons/agents/omp.svg" height="20" alt="OMP"></a> |
-| agoragentic | Agoragentic | `agoragentic-mcp` | <a href="https://agoragentic.com"><img src="src/main/resources/icons/agents/agoragentic.png" height="20" alt="Agoragentic"></a> |
-| cortex-code | Cortex Code | `cortex` | <a href="https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code"><img src="src/main/resources/icons/agents/cortex-code.png" height="20" alt="Cortex Code"></a> |
-| corust-agent | Corust Agent | `corust` | <a href="https://corust.ai/"><img src="src/main/resources/icons/agents/corust-agent.svg" height="20" alt="Corust Agent"></a> |
-| crow-cli | Crow CLI | `crow-cli` | <a href="https://crow-ai.dev"><img src="src/main/resources/icons/agents/crow-cli.svg" height="20" alt="Crow CLI"></a> |
-| deepagents | DeepAgents | `deepagents-acp` | <a href="https://docs.langchain.com/oss/javascript/deepagents/overview"><img src="src/main/resources/icons/agents/deepagents.svg" height="20" alt="DeepAgents"></a> |
-| dirac | Dirac | `dirac` | <a href="https://dirac.run"><img src="src/main/resources/icons/agents/dirac.svg" height="20" alt="Dirac"></a> |
-| dimcode | DimCode | `dim` | <a href="https://dimcode.dev/docs/acp.html"><img src="src/main/resources/icons/agents/dimcode.png" height="20" alt="DimCode"></a> |
-| fast-agent | Fast Agent | `fast-agent` | <a href="https://fast-agent.ai"><img src="src/main/resources/icons/agents/fast-agent.svg" height="20" alt="Fast Agent"></a> |
-| glm-agent | GLM Agent | `glm-acp-agent` | <a href="https://github.com/stefandevo/glm-acp-agent"><img src="src/main/resources/icons/agents/glm-agent.svg" height="20" alt="GLM Agent"></a> |
-| harn | Harn | `harn` | <a href="https://harnlang.com"><img src="src/main/resources/icons/agents/harn.svg" height="20" alt="Harn"></a> |
-| junie | Junie | `junie` | <a href="https://junie.jetbrains.com"><img src="src/main/resources/icons/agents/junie.svg" height="20" alt="Junie"></a> |
-| minion-code | Minion Code | `minion-code` | <a href="https://github.com/femto/minion-code"><img src="src/main/resources/icons/agents/minion-code.svg" height="20" alt="Minion Code"></a> |
-| nova | Nova | `nova` | <a href="https://www.compassap.ai/portfolio/nova.html"><img src="src/main/resources/icons/agents/nova.svg" height="20" alt="Nova"></a> |
-| poolside | Poolside | `pool` | <a href="https://poolside.ai"><img src="src/main/resources/icons/agents/poolside.svg" height="20" alt="Poolside"></a> |
-| sigit | siGit Code | `sigit` | <a href="https://smbcloud.xyz"><img src="src/main/resources/icons/agents/sigit.png" height="20" alt="siGit Code"></a> |
-| stakpak | Stakpak | `stakpak` | <a href="https://stakpak.dev"><img src="src/main/resources/icons/agents/stakpak.png" height="20" alt="Stakpak"></a> |
-| vtcode | VT Code | `vtcode` | <a href="https://github.com/vinhnx/VTCode"><img src="src/main/resources/icons/agents/vtcode.png" height="20" alt="VT Code"></a> |
-
-任何未列出的工具都可以作为自定义工具正常使用;只需自己填好它的标志即可。
-
----
+完整的、随时更新的受支持 agent 列表维护在 [Agent YOLO 家族 README](https://github.com/cnsharp/Agent-YOLO/blob/main/Meta/README.md#supported-agents)。
 
 ## 故障排查
 
