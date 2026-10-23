@@ -467,8 +467,6 @@ private class YoloPanel(
             return AgentRegistry.resumeFlagFor(baseName(cmd)).ifBlank { AgentRegistry.resumeFlagFor(id) }
         }
 
-        // Collect into a list, but skip any row whose (non-blank) command was already seen — promoted agents
-        // are added before custom tools, so a custom tool duplicating a promoted command is silently dropped.
         val rows = mutableListOf<AgentRow>()
         val seenCommands = mutableSetOf<String>()
         fun addUnique(row: AgentRow) {
@@ -480,16 +478,51 @@ private class YoloPanel(
         // real agent, so it launches nothing — this also prevents the first real agent from auto-launching
         // when the panel opens and selectedIndex is set programmatically.
         addUnique(AgentRow("", message("panel.agentsPrompt"), "", "", "", "", ""))
+
+        // Index user custom tools by command and by id so a newly-built-in agent that matches a tool the
+        // user already added can be field-merged (VSC-style) instead of duplicated or silently dropped.
+        // Matching on either key means an upgrade that adds a built-in for an existing custom tool still
+        // resolves even if only one of the two is shared.
+        val customByKey = mutableMapOf<String, CustomTool>()
+        for (tool in settings.customTools) {
+            if (tool.command.isNotBlank()) customByKey[tool.command.lowercase().trim()] = tool
+            if (tool.id.isNotBlank()) customByKey[tool.id.lowercase().trim()] = tool
+        }
+        val consumed = mutableSetOf<CustomTool>()
+
+        // ① Built-ins first. If a built-in matches a user custom tool (by command or id), the custom
+        //    fields win for the values it set — displayName / baseArgs / icon — while the built-in still
+        //    supplies the canonical command, id and (default) skip / resume flags. The user's prior
+        //    customization is preserved: never lost and never shown twice.
         for (def in AgentRegistry.agents) {
             val baseArgs = settings.agentBaseArgs[def.id.lowercase()] ?: ""
-            addUnique(
-                AgentRow(
-                    def.id, def.displayName, def.command, baseArgs,
-                    flagFor(def.command, def.id), resumeFor(def.command, def.id), ""
+            val match = customByKey[def.command.lowercase().trim()] ?: customByKey[def.id.lowercase().trim()]
+            if (match != null) {
+                consumed.add(match)
+                addUnique(
+                    AgentRow(
+                        def.id,
+                        match.displayName.ifBlank { def.displayName },
+                        def.command,
+                        match.baseArgs.ifBlank { baseArgs },
+                        flagFor(def.command, def.id),
+                        resumeFor(def.command, def.id),
+                        match.iconPath
+                    )
                 )
-            )
+            } else {
+                addUnique(
+                    AgentRow(
+                        def.id, def.displayName, def.command, baseArgs,
+                        flagFor(def.command, def.id), resumeFor(def.command, def.id), ""
+                    )
+                )
+            }
         }
+
+        // ② Custom tools NOT matching any built-in — genuine user additions, emitted as-is.
         for (tool in settings.customTools) {
+            if (tool in consumed) continue
             addUnique(
                 AgentRow(
                     id = tool.id,

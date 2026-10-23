@@ -12,6 +12,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ide.HelpTooltip
@@ -54,6 +55,8 @@ import javax.swing.table.TableCellRenderer
  * shown, otherwise a default lightning bolt is used.
  */
 class AgentExtenderConfigurable : Configurable {
+
+    private val LOG = Logger.getInstance(AgentExtenderConfigurable::class.java)
 
     private val toolsModel = DefaultTableModel(
         arrayOf(
@@ -741,6 +744,7 @@ class AgentExtenderConfigurable : Configurable {
     private fun reportDuplicates() {
         val problems = findDuplicates()
         if (problems.isNotEmpty()) {
+            LOG.warn(problems.joinToString("; "))
             setStatus(problems.joinToString("; "), warn = true)
         } else if (statusLabel.foreground == JBColor.RED) {
             setStatus("", warn = false)
