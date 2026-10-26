@@ -403,20 +403,6 @@
     }
   },
   {
-    "id": "rovo",
-    "baseArgs": "",
-    "displayName": "Rovo Dev",
-    "command": "rovo",
-    "skipFlag": "--yolo",
-    "resumeFlag": "",
-    "icon": "rovo.svg",
-    "url": "https://rovo.atlassian.com/",
-    "install": {
-      "type": "url",
-      "url": "https://rovo.atlassian.com/"
-    }
-  },
-  {
     "id": "prime-agent",
     "baseArgs": "",
     "displayName": "Prime Agent",
