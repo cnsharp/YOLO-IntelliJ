@@ -12,7 +12,10 @@
       "type": "shell",
       "cmd": "curl -fsSL https://claude.ai/install.sh | bash",
       "cmdWin": "irm https://claude.ai/install.ps1 | iex",
-      "updateCmd": "claude update"
+      "updateCmd": "claude update",
+      "latest": {
+        "npm": "@anthropic-ai/claude-code"
+      }
     }
   },
   {
@@ -28,7 +31,10 @@
       "type": "shell",
       "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
       "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
-      "updateCmd": "npm install -g @openai/codex@latest"
+      "updateCmd": "npm install -g @openai/codex@latest",
+      "latest": {
+        "npm": "@openai/codex"
+      }
     }
   },
   {
@@ -43,7 +49,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl https://cursor.com/install -fsS | bash",
-      "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex"
+      "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex",
+      "latest": {
+        "web": {
+          "url": "https://cursor.com/install",
+          "pattern": "(\\d{4}\\.\\d{2}\\.\\d{2})"
+        }
+      }
     }
   },
   {
@@ -59,7 +71,10 @@
       "type": "shell",
       "cmd": "curl -fsSL https://gh.io/copilot-install | bash",
       "cmdWin": "winget install GitHub.Copilot",
-      "updateCmd": "copilot update"
+      "updateCmd": "copilot update",
+      "latest": {
+        "npm": "@github/copilot"
+      }
     }
   },
   {
@@ -74,7 +89,11 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://opencode.ai/install | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\""
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\"",
+      "latest": {
+        "npm": "opencode-ai",
+        "github": "anomalyco/opencode"
+      }
     }
   },
   {
@@ -117,7 +136,10 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.sh | bash",
-      "cmdWin": "irm https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.ps1 | iex"
+      "cmdWin": "irm https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.ps1 | iex",
+      "latest": {
+        "npm": "@continuedev/cli"
+      }
     }
   },
   {
@@ -133,7 +155,10 @@
       "type": "shell",
       "cmd": "curl -fsSL https://openclaw.ai/install.sh | bash",
       "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex",
-      "updateCmd": "openclaw update"
+      "updateCmd": "openclaw update",
+      "latest": {
+        "npm": "openclaw"
+      }
     }
   },
   {
@@ -149,7 +174,13 @@
       "type": "shell",
       "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
       "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex",
-      "updateCmd": "kiro-cli update"
+      "updateCmd": "kiro-cli update",
+      "latest": {
+        "web": {
+          "url": "https://prod.download.cli.kiro.dev/stable/latest/manifest.json",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -196,7 +227,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://ampcode.com/install.sh | bash",
-      "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\""
+      "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\"",
+      "latest": {
+        "web": {
+          "url": "https://static.ampcode.com/cli/cli-version.txt",
+          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+        }
+      }
     }
   },
   {
@@ -239,7 +276,13 @@
     "install": {
       "type": "shell",
       "cmd": "sh -c \"$(curl -L https://trae.cn/trae-cli/install.sh)\"",
-      "cmdWin": "irm https://trae.cn/trae-cli/install.ps1 | iex"
+      "cmdWin": "irm https://trae.cn/trae-cli/install.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/trae-cli/trae-cli_latest_version.txt",
+          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+        }
+      }
     }
   },
   {
@@ -282,7 +325,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://cli.devin.ai/install.sh | bash",
-      "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex"
+      "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://static.devin.ai/cli/current/manifest.json",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -312,7 +361,13 @@
       "type": "shell",
       "cmd": "curl -fsSL https://antigravity.google/cli/install.sh | bash",
       "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex",
-      "updateCmd": "agy update"
+      "updateCmd": "agy update",
+      "latest": {
+        "web": {
+          "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/darwin_arm64.json",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -356,7 +411,10 @@
       "type": "shell",
       "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
       "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
-      "updateCmd": "hermes update"
+      "updateCmd": "hermes update",
+      "latest": {
+        "pypi": "hermes-agent"
+      }
     }
   },
   {
@@ -385,7 +443,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://app.factory.ai/cli | sh",
-      "cmdWin": "irm https://app.factory.ai/cli/windows | iex"
+      "cmdWin": "irm https://app.factory.ai/cli/windows | iex",
+      "latest": {
+        "web": {
+          "url": "https://app.factory.ai/cli",
+          "pattern": "VER=\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -414,7 +478,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh",
-      "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\""
+      "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\"",
+      "latest": {
+        "web": {
+          "url": "https://pub-728493de92a943e2a9b2d17b4719f318.r2.dev/stable",
+          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+        }
+      }
     }
   },
   {
@@ -457,7 +527,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://ante.run/install.sh | bash",
-      "cmdWin": "irm https://ante.run/install.ps1 | iex"
+      "cmdWin": "irm https://ante.run/install.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://download.ante.run/channels/stable/manifest.json",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -487,7 +563,10 @@
       "type": "shell",
       "cmd": "curl -s https://ohmyposh.dev/install.sh | bash -s",
       "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget",
-      "updateCmd": "oh-my-posh upgrade"
+      "updateCmd": "oh-my-posh upgrade",
+      "latest": {
+        "brew": "oh-my-posh"
+      }
     }
   },
   {
@@ -516,7 +595,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh",
-      "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex"
+      "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://sfc-repo.snowflakecomputing.com/cortex-code-cli/a4643c4278/stable_version.txt",
+          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+        }
+      }
     }
   },
   {
@@ -545,7 +630,10 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://crow-ai.dev/install.sh | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\""
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\"",
+      "latest": {
+        "github": "crow-cli/crow-cli"
+      }
     }
   },
   {
@@ -630,7 +718,10 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://harnlang.com/install.sh | sh",
-      "cmdWin": "irm https://harnlang.com/install.ps1 | iex"
+      "cmdWin": "irm https://harnlang.com/install.ps1 | iex",
+      "latest": {
+        "github": "burin-labs/harn"
+      }
     }
   },
   {
@@ -645,7 +736,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://junie.jetbrains.com/install.sh | bash",
-      "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex"
+      "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://raw.githubusercontent.com/jetbrains-junie/junie/main/update-info.jsonl",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+        }
+      }
     }
   },
   {
@@ -688,7 +785,13 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://downloads.poolside.ai/pool/install.sh | sh",
-      "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex"
+      "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex",
+      "latest": {
+        "web": {
+          "url": "https://downloads.poolside.ai/pool/pool-latest-version.txt",
+          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+        }
+      }
     }
   },
   {
@@ -717,7 +820,10 @@
     "install": {
       "type": "shell",
       "cmd": "curl -sSL https://stakpak.dev/install.sh | sh",
-      "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\""
+      "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\"",
+      "latest": {
+        "github": "stakpak/agent"
+      }
     }
   },
   {
@@ -732,7 +838,10 @@
     "install": {
       "type": "shell",
       "cmd": "curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash\""
+      "cmdWin": "wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash\"",
+      "latest": {
+        "github": "vinhnx/vtcode"
+      }
     }
   }
 ]

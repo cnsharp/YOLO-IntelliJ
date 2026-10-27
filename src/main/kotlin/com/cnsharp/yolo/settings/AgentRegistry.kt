@@ -10,17 +10,48 @@ import com.intellij.openapi.diagnostic.Logger
  *    Windows-only variant (e.g. a PowerShell one-liner), used when [com.intellij.openapi.util.SystemInfo.isWindows].
  *    `updateCmd`, when set, is the agent's *own* self-update subcommand (e.g. `claude update`); the Update
  *    button runs it directly instead of re-running the installer or opening the site.
- *  - url: no automatable package; the Install button opens `url` in the browser instead. */
+ *  - url: no automatable package; the Install button opens `url` in the browser instead.
+ *
+ * `latest` is an optional structured source for the *latest* published version (mirrors the VSCode
+ * `yolo` product's `agents.json`). When present, [AgentUpdateChecker] queries that source over HTTP
+ * instead of (or in addition to) the package-manager shell probes, so `shell`/`url` agents whose
+ * version cannot be read from a package manager (Cursor, Trae, Kiro, ...) still get a live "latest"
+ * badge. One of `npm` / `github` / `pypi` / `brew` names the upstream, or `web` points at a page whose
+ * version is scraped with `pattern`. */
+data class WebSource(
+    val url: String = "",
+    val pattern: String = ""
+)
+
+data class LatestSpec(
+    val npm: String = "",
+    val github: String = "",
+    val pypi: String = "",
+    val brew: String = "",
+    val web: WebSource? = null
+) {
+    val hasSource: Boolean
+        get() = npm.isNotBlank() || github.isNotBlank() || pypi.isNotBlank() || brew.isNotBlank()
+            || (web != null && web.url.isNotBlank())
+}
+
 data class InstallSpec(
     val type: String = "",
     val pkg: String = "",
     val cmd: String = "",
     val cmdWin: String = "",
     val url: String = "",
-    val updateCmd: String = ""
+    val updateCmd: String = "",
+    val latest: LatestSpec? = null
 ) {
     /** Whether the plugin can run this install head-less (everything except `url`). */
     val automatable: Boolean get() = type in setOf("npm", "pip", "brew", "shell")
+    /** Like [automatable] but also false for `brew` on native Windows (no Homebrew there). */
+    val automatableOnPlatform: Boolean
+        get() = when (type) {
+            "brew" -> !com.intellij.openapi.util.SystemInfo.isWindows
+            else -> automatable
+        }
     /** Human-readable install target shown in the status line, e.g. the package or command. */
     val target: String get() = when (type) {
         "npm", "pip", "brew" -> pkg
@@ -30,6 +61,8 @@ data class InstallSpec(
     /** True when the Update button can perform a real upgrade (package-manager spec, or a shell agent that
      *  declares its own update subcommand). */
     val hasUpdateCommand: Boolean get() = type in setOf("npm", "pip", "brew") || updateCmd.isNotBlank()
+    /** True when a structured `latest` source is declared (so the version checker can query it over HTTP). */
+    val hasLatestSource: Boolean get() = latest?.hasSource == true
 }
 
 data class AgentDef(

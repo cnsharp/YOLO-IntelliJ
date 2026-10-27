@@ -1,9 +1,14 @@
 package com.cnsharp.yolo.settings
 
 import com.cnsharp.yolo.Yolo
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.SystemInfo
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 
@@ -33,10 +38,19 @@ object AgentUpdateChecker {
 
     private val LOG = Logger.getInstance(AgentUpdateChecker::class.java)
 
+    /** Single probe timeout - a hung --version or registry query must not stall the whole scan. */
+    private const val PROBE_TIMEOUT_MS = 20_000
+    /** Key under which last-known latest versions are persisted (cache-first on panel open). */
+    private const val CACHE_KEY = "yolo.latestVersions"
+
     @Volatile private var checking = false
     private val lock = Any()
     private val results = mutableMapOf<String, UpdateInfo>()
     private val listeners = mutableListOf<(Map<String, UpdateInfo>) -> Unit>()
+    /** Detections collected during a scan, flushed to PropertiesComponent once at the end. */
+    private val dirtyLatest = mutableMapOf<String, String>()
+    /** Ensures the persisted cache is loaded into results at most once (status NA, version shown). */
+    private var seeded = false
 
     /** Full result for a command (lower-cased), or null when never checked. Read under the same monitor the
      *  pooled-thread writer uses, so a table repaint (EDT) can't race a checkAll write and throw CME. */
@@ -74,10 +88,11 @@ object AgentUpdateChecker {
             if (checking) return
             checking = true
         }
+        seedFromCache()
         val installed = InstalledAgents.installed()
         val specs = AgentRegistry.agents.mapNotNull { def ->
             val spec = def.install ?: return@mapNotNull null
-            if (!spec.automatable) return@mapNotNull null
+            if (!spec.automatable && !spec.hasLatestSource) return@mapNotNull null
             if (def.command.lowercase() !in installed) return@mapNotNull null
             def.command.lowercase() to spec
         }
@@ -99,10 +114,12 @@ object AgentUpdateChecker {
                         UpdateInfo(Status.ERROR)
                     }
                     synchronized(results) { results[cmd] = info }
+                    if (info.latest.isNotBlank()) markLatest(cmd, info.latest)
                 }
                 publish()
             } finally {
                 checking = false
+                flushLatest()
             }
         }
     }
@@ -116,31 +133,34 @@ object AgentUpdateChecker {
             UpdateInfo(Status.ERROR)
         }
         synchronized(results) { results[command.lowercase()] = info }
+        if (info.latest.isNotBlank()) markLatest(command, info.latest)
+        flushLatest()
         publish()
     }
 
     /** Read the installed version from the agent's own `<command> --version`, compare with the package source. */
     private fun checkAgent(command: String, spec: InstallSpec): UpdateInfo {
         val current = currentVersion(command)
-        return when (spec.type) {
-            "npm", "pip", "brew" -> {
-                val latest = latestVersion(spec)
-                when {
-                    latest.isNotEmpty() && current.isNotEmpty() -> {
-                        val cmp = compareSemver(semverOf(current), semverOf(latest))
-                        // current >= latest (incl. a newer-than-latest local build) => up to date.
-                        if (cmp < 0) UpdateInfo(Status.UPDATE_AVAILABLE, current, latest)
-                        else UpdateInfo(Status.UP_TO_DATE, current, latest)
-                    }
-                    latest.isNotEmpty() -> {
-                        // Installed version unreadable; fall back to the package manager's outdated probe.
-                        val outdated = probeOutdated(spec)
-                        UpdateInfo(if (outdated) Status.UPDATE_AVAILABLE else Status.UP_TO_DATE, current, latest)
-                    }
-                    else -> UpdateInfo(Status.ERROR, current, "")
-                }
+        if (!canQueryVersion(spec)) {
+            // No queryable package source (shell/url without a latest source, or brew on Windows): report
+            // MANUAL so the UI offers the agent's own update command / site instead of a fake result.
+            return if (current.isNotEmpty()) UpdateInfo(Status.MANUAL, current, "") else UpdateInfo(Status.NA)
+        }
+        val latest = latestVersion(spec)
+        return when {
+            latest.isNotEmpty() && current.isNotEmpty() -> {
+                val cmp = compareSemver(semverOf(current), semverOf(latest))
+                // current >= latest (incl. a newer-than-latest local build) => up to date.
+                if (cmp < 0) UpdateInfo(Status.UPDATE_AVAILABLE, current, latest)
+                else UpdateInfo(Status.UP_TO_DATE, current, latest)
             }
-            else -> UpdateInfo(Status.MANUAL, current, "")
+            latest.isNotEmpty() -> {
+                // Installed version unreadable; fall back to the package manager's outdated probe
+                // (only meaningful for npm/pip/brew; web/github sources have no such probe).
+                val outdated = if (spec.type in setOf("npm", "pip", "brew")) probeOutdated(spec) else false
+                UpdateInfo(if (outdated) Status.UPDATE_AVAILABLE else Status.UP_TO_DATE, current, latest)
+            }
+            else -> UpdateInfo(Status.ERROR, current, "")
         }
     }
 
@@ -153,8 +173,17 @@ object AgentUpdateChecker {
         return ""
     }
 
-    /** Latest published version for a package-manager spec. Empty if it cannot be determined. */
-    private fun latestVersion(spec: InstallSpec): String = when (spec.type) {
+    /** Latest published version for an install spec. A declared `latest` source (npm / github /
+     *  pypi / brew / web) is queried over HTTP first; otherwise we fall back to the package-manager
+     *  shell probes (npm view / pip / brew info). Empty if it cannot be determined. */
+    private fun latestVersion(spec: InstallSpec): String {
+        if (spec.latest?.npm?.isNotBlank() == true) return npmLatestFromApi(spec.latest!!.npm)
+        if (spec.latest?.github?.isNotBlank() == true) return githubLatest(spec.latest!!.github)
+        if (spec.latest?.pypi?.isNotBlank() == true) return pypiLatest(spec.latest!!.pypi)
+        if (spec.latest?.brew?.isNotBlank() == true) return brewLatestFromApi(spec.latest!!.brew)
+        val web = spec.latest?.web
+        if (web != null && web.url.isNotBlank()) return webLatest(web)
+        return when (spec.type) {
         "npm" -> {
             val (ok, out) = run("npm view '${spec.pkg.replace("'", "'\\''")}' version")
             if (ok) semverOf(out)?.joinToString(".") ?: "" else ""
@@ -170,6 +199,7 @@ object AgentUpdateChecker {
             } else ""
         }
         else -> ""
+        }
     }
 
     /** pip latest: prefer `pip index versions` (newest listed first), fall back to a dry-run's "Would install". */
@@ -238,6 +268,122 @@ object AgentUpdateChecker {
             if (a[i] != b[i]) return a[i] - b[i]
         }
         return a.size - b.size
+    }
+
+    /** Whether this spec's latest version can be queried on the current platform. */
+    private fun canQueryVersion(spec: InstallSpec): Boolean {
+        return (spec.automatableOnPlatform && spec.type in setOf("npm", "pip", "brew")) || spec.hasLatestSource
+    }
+
+    /** Fetch a URL body as text with a bounded timeout, or null on any failure (so the caller shows a
+     *  dash instead of hanging the scan on a blocked/slow registry). */
+    private fun fetchText(url: String, accept: String? = null): String? {
+        return try {
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "agentyolo")
+            if (accept != null) conn.setRequestProperty("Accept", accept)
+            conn.connectTimeout = PROBE_TIMEOUT_MS
+            conn.readTimeout = PROBE_TIMEOUT_MS
+            if (conn.responseCode !in 200..299) { conn.disconnect(); null }
+            else conn.inputStream.bufferedReader().use { it.readText() }
+        } catch (e: Exception) { null }
+    }
+
+    /** Latest version from the npm dist-tags endpoint (small payload, unlike the full packument). */
+    private fun npmLatestFromApi(pkg: String): String {
+        val url = "https://registry.npmjs.org/-/package/" + pkg.replace("/", "%2f") + "/dist-tags"
+        val text = fetchText(url) ?: return ""
+        return try {
+            val obj = Gson().fromJson(text, JsonObject::class.java)
+            obj.getAsJsonPrimitive("latest")?.asString ?: ""
+        } catch (e: Exception) { "" }
+    }
+
+    /** Latest version from a GitHub repo's latest release (release name's semver preferred over tag_name). */
+    private fun githubLatest(repo: String): String {
+        val url = "https://api.github.com/repos/" + repo + "/releases/latest"
+        val text = fetchText(url, "application/vnd.github+json") ?: return ""
+        return try {
+            val obj = Gson().fromJson(text, JsonObject::class.java)
+            for (key in listOf("name", "tag_name")) {
+                val raw = obj.get(key)?.takeIf { !it.isJsonNull }?.asString ?: continue
+                val cleaned = raw.removePrefix("v")
+                val v = semverOf(cleaned)
+                if (v != null && v[0] < 1000) return v.joinToString(".") // reject calendar-style tags
+            }
+            ""
+        } catch (e: Exception) { "" }
+    }
+
+    /** Latest version from PyPI's JSON API. */
+    private fun pypiLatest(pkg: String): String {
+        val url = "https://pypi.org/pypi/" + pkg + "/json"
+        val text = fetchText(url) ?: return ""
+        return try {
+            val obj = Gson().fromJson(text, JsonObject::class.java)
+            obj.getAsJsonObject("info")?.getAsJsonPrimitive("version")?.asString ?: ""
+        } catch (e: Exception) { "" }
+    }
+
+    /** Latest version from the Homebrew formula API (no auth, unlike the GitHub API rate limit). */
+    private fun brewLatestFromApi(formula: String): String {
+        val url = "https://formulae.brew.sh/api/formula/" + formula + ".json"
+        val text = fetchText(url) ?: return ""
+        return try {
+            val obj = Gson().fromJson(text, JsonObject::class.java)
+            obj.getAsJsonObject("versions")?.getAsJsonPrimitive("stable")?.asString ?: ""
+        } catch (e: Exception) { "" }
+    }
+
+    /** Latest version scraped from a web page that has no structured API. Returns the first capture
+     *  group (or the whole match). Used for date-versioned tools whose install page is server-rendered. */
+    private fun webLatest(src: WebSource): String {
+        val html = fetchText(src.url) ?: return ""
+        return try {
+            val m = Regex(src.pattern, RegexOption.MULTILINE).find(html)
+            if (m != null) (if (m.groupValues.size > 1) m.groupValues[1] else m.groupValues[0]) else ""
+        } catch (e: Exception) { "" }
+    }
+
+    // -- persisted cache of last-known latest versions (cache-first on panel open) --
+
+    private fun seedFromCache() {
+        if (seeded) return
+        seeded = true
+        val raw = PropertiesComponent.getInstance().getValue(CACHE_KEY) ?: return
+        try {
+            val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+            val map = Gson().fromJson<Map<String, String>>(raw, type)
+            if (map != null) {
+                synchronized(results) {
+                    for ((cmd, ver) in map) {
+                        val k = cmd.lowercase()
+                        if (ver.isNotBlank() && !results.containsKey(k)) {
+                            results[k] = UpdateInfo(Status.NA, "", ver)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) { /* ignore malformed cache */ }
+    }
+
+    private fun markLatest(command: String, version: String) {
+        if (version.isNotBlank()) dirtyLatest[command.lowercase()] = version
+    }
+
+    private fun flushLatest() {
+        if (dirtyLatest.isEmpty()) return
+        val pc = PropertiesComponent.getInstance()
+        val existing = try {
+            val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+            val cur = pc.getValue(CACHE_KEY)
+            val map = Gson().fromJson<Map<String, String>>(cur ?: "{}", type)
+            (map ?: emptyMap()).toMutableMap()
+        } catch (e: Exception) { mutableMapOf() }
+        existing.putAll(dirtyLatest)
+        pc.setValue(CACHE_KEY, Gson().toJson(existing))
+        dirtyLatest.clear()
     }
 
     /** Run a shell command and return (success, combined output). Mirrors AgentExtenderConfigurable.runInstallCommand. */
