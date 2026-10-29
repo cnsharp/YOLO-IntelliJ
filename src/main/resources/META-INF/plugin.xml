@@ -55,6 +55,9 @@
                     icon="/icons/skipY.svg"
                     doNotActivateOnStart="true"
                     factoryClass="com.cnsharp.yolo.panel.YoloToolWindowFactory"/>
+        <!-- Opens the "Manage Agents" page as a tab in the MAIN EDITOR AREA (not the tool window), mirroring
+             the VSCode Agent Manager. accept() matches only the synthetic ManageAgentsVirtualFile. -->
+        <fileEditorProvider implementation="com.cnsharp.yolo.panel.ManageAgentsEditorProvider"/>
     </extensions>
 
 
@@ -67,5 +70,7 @@
                 class="com.cnsharp.yolo.launcher.ResumeAction"/>
         <action id="com.cnsharp.yolo.OpenSettingsAction"
                 class="com.cnsharp.yolo.settings.OpenSettingsAction"/>
+        <action id="com.cnsharp.yolo.ManageAgentsAction"
+                class="com.cnsharp.yolo.panel.ManageAgentsAction"/>
     </actions>
 </idea-plugin>

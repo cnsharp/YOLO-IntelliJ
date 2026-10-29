@@ -87,27 +87,6 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
 
     override fun loadState(state: State) {
         XmlSerializerUtil.copyBean(state, currentState)
-        // Persisted state is now available; if the user opted in, schedule one background update check
-        // on startup (guarded so repeated loads are harmless). The result is cached by AgentUpdateChecker
-        // and surfaced when the Settings page opens.
-        if (currentState.autoCheckUpdates) ensureUpdateCheckScheduled()
-    }
-
-    private var updateCheckScheduled = false
-    /** Schedule a one-time background agent-update check (idempotent).
-     *  [AgentUpdateChecker.checkAll] only checks agents present in the installed-agents cache
-     *  ([InstalledAgents]), which on a fresh machine may still be empty at startup (the terminal panel
-     *  rescans PATH only when it opens). So we populate that cache first via [InstalledAgents.rescan];
-     *  the rescan callback runs the check when the cache changed (first run), and we also kick [checkAll]
-     *  directly to cover the "cache already current" case. [checkAll] is itself guarded against overlap. */
-    private fun ensureUpdateCheckScheduled() {
-        if (updateCheckScheduled) return
-        updateCheckScheduled = true
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val commands = AgentRegistry.agents.map { it.command }.filter { it.isNotBlank() }
-            InstalledAgents.rescan(commands) { AgentUpdateChecker.checkAll() }
-            AgentUpdateChecker.checkAll()
-        }
     }
 
     class State {
@@ -158,11 +137,6 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
          * Absent (or blank) means "use the agent's official default backend" (no env injection).
          */
         var providerBindings: MutableMap<String, String> = mutableMapOf()
-        /**
-         * When true, check installed agents for newer versions once on IDE startup (background, see
-         * [ensureUpdateCheckScheduled]). The user can also check on demand from Settings | Tools | YOLO.
-         */
-        var autoCheckUpdates: Boolean = false
     }
 
     companion object {

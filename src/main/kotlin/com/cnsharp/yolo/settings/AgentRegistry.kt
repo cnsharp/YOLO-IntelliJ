@@ -73,6 +73,9 @@ data class AgentDef(
     val resumeFlag: String = "",
     val skipEnv: Pair<String, String>? = null,
     val icon: String = "",
+    /** Agent's homepage (e.g. https://claude.ai/) — powers the "Website" button on the Manage Agents card.
+     *  Distinct from [InstallSpec.url], which is the install/download page (blank for npm/pip/brew agents). */
+    val url: String = "",
     val install: InstallSpec? = null
 )
 

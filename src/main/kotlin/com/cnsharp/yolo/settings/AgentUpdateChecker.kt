@@ -42,6 +42,9 @@ object AgentUpdateChecker {
     private const val PROBE_TIMEOUT_MS = 20_000
     /** Key under which last-known latest versions are persisted (cache-first on panel open). */
     private const val CACHE_KEY = "yolo.latestVersions"
+    private const val CACHE_KEY_CURRENT = "yolo.currentVersions"
+    private const val CACHE_KEY_CURRENT_TS = "yolo.currentVersions.ts"
+    private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
 
     @Volatile private var checking = false
     private val lock = Any()
@@ -49,6 +52,8 @@ object AgentUpdateChecker {
     private val listeners = mutableListOf<(Map<String, UpdateInfo>) -> Unit>()
     /** Detections collected during a scan, flushed to PropertiesComponent once at the end. */
     private val dirtyLatest = mutableMapOf<String, String>()
+    private val dirtyCurrent = mutableMapOf<String, String>()
+    private val dirtyCurrentTs = mutableMapOf<String, Long>()
     /** Ensures the persisted cache is loaded into results at most once (status NA, version shown). */
     private var seeded = false
 
@@ -104,7 +109,7 @@ object AgentUpdateChecker {
         val app = ApplicationManager.getApplication()
         app.executeOnPooledThread {
             try {
-                synchronized(results) { specs.forEach { (cmd, _) -> results[cmd] = UpdateInfo(Status.CHECKING) } }
+                synchronized(results) { specs.forEach { (cmd, _) -> results[cmd] = UpdateInfo(Status.CHECKING, results[cmd]?.current ?: "", results[cmd]?.latest ?: "") } }
                 publish()
                 for ((cmd, spec) in specs) {
                     val info = try {
@@ -115,6 +120,7 @@ object AgentUpdateChecker {
                     }
                     synchronized(results) { results[cmd] = info }
                     if (info.latest.isNotBlank()) markLatest(cmd, info.latest)
+                    if (info.current.isNotBlank()) markCurrent(cmd, info.current)
                 }
                 publish()
             } finally {
@@ -134,6 +140,7 @@ object AgentUpdateChecker {
         }
         synchronized(results) { results[command.lowercase()] = info }
         if (info.latest.isNotBlank()) markLatest(command, info.latest)
+        if (info.current.isNotBlank()) markCurrent(command, info.current)
         flushLatest()
         publish()
     }
@@ -351,39 +358,74 @@ object AgentUpdateChecker {
     private fun seedFromCache() {
         if (seeded) return
         seeded = true
-        val raw = PropertiesComponent.getInstance().getValue(CACHE_KEY) ?: return
-        try {
-            val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
-            val map = Gson().fromJson<Map<String, String>>(raw, type)
-            if (map != null) {
-                synchronized(results) {
-                    for ((cmd, ver) in map) {
-                        val k = cmd.lowercase()
-                        if (ver.isNotBlank() && !results.containsKey(k)) {
-                            results[k] = UpdateInfo(Status.NA, "", ver)
-                        }
-                    }
+        val now = System.currentTimeMillis()
+        val latestMap = loadVersionMap(CACHE_KEY)
+        val curMap = loadVersionMap(CACHE_KEY_CURRENT)
+        val tsMap = loadTsMap(CACHE_KEY_CURRENT_TS)
+        synchronized(results) {
+            for ((cmd, ver) in latestMap) {
+                val k = cmd.lowercase()
+                if (ver.isNotBlank() && !results.containsKey(k)) {
+                    results[k] = UpdateInfo(Status.NA, "", ver)
                 }
             }
-        } catch (e: Exception) { /* ignore malformed cache */ }
+            for ((cmd, ver) in curMap) {
+                val k = cmd.lowercase()
+                val ts = tsMap[cmd] ?: 0L
+                if (ver.isNotBlank() && now - ts < CACHE_TTL_MS) {
+                    val existing = results[k]
+                    results[k] = UpdateInfo(existing?.status ?: Status.NA, ver, existing?.latest ?: "")
+                }
+            }
+        }
     }
 
     private fun markLatest(command: String, version: String) {
         if (version.isNotBlank()) dirtyLatest[command.lowercase()] = version
     }
 
+    private fun markCurrent(command: String, version: String) {
+        if (version.isNotBlank()) {
+            val k = command.lowercase()
+            dirtyCurrent[k] = version
+            dirtyCurrentTs[k] = System.currentTimeMillis()
+        }
+    }
+
+    private fun loadVersionMap(key: String): Map<String, String> = try {
+        val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+        Gson().fromJson<Map<String, String>>(PropertiesComponent.getInstance().getValue(key) ?: "{}", type) ?: emptyMap()
+    } catch (e: Exception) { emptyMap() }
+
+    private fun loadTsMap(key: String): Map<String, Long> = try {
+        val type = object : com.google.gson.reflect.TypeToken<Map<String, Long>>() {}.type
+        Gson().fromJson<Map<String, Long>>(PropertiesComponent.getInstance().getValue(key) ?: "{}", type) ?: emptyMap()
+    } catch (e: Exception) { emptyMap() }
+
     private fun flushLatest() {
-        if (dirtyLatest.isEmpty()) return
+        if (dirtyLatest.isEmpty() && dirtyCurrent.isEmpty()) return
         val pc = PropertiesComponent.getInstance()
-        val existing = try {
-            val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
-            val cur = pc.getValue(CACHE_KEY)
-            val map = Gson().fromJson<Map<String, String>>(cur ?: "{}", type)
-            (map ?: emptyMap()).toMutableMap()
-        } catch (e: Exception) { mutableMapOf() }
-        existing.putAll(dirtyLatest)
-        pc.setValue(CACHE_KEY, Gson().toJson(existing))
-        dirtyLatest.clear()
+        if (dirtyLatest.isNotEmpty()) {
+            val existing = try {
+                val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+                val cur = pc.getValue(CACHE_KEY)
+                val map = Gson().fromJson<Map<String, String>>(cur ?: "{}", type)
+                (map ?: emptyMap()).toMutableMap()
+            } catch (e: Exception) { mutableMapOf() }
+            existing.putAll(dirtyLatest)
+            pc.setValue(CACHE_KEY, Gson().toJson(existing))
+            dirtyLatest.clear()
+        }
+        if (dirtyCurrent.isNotEmpty()) {
+            val existingCur = loadVersionMap(CACHE_KEY_CURRENT).toMutableMap()
+            existingCur.putAll(dirtyCurrent)
+            pc.setValue(CACHE_KEY_CURRENT, Gson().toJson(existingCur))
+            dirtyCurrent.clear()
+            val existingTs = loadTsMap(CACHE_KEY_CURRENT_TS).toMutableMap()
+            existingTs.putAll(dirtyCurrentTs)
+            pc.setValue(CACHE_KEY_CURRENT_TS, Gson().toJson(existingTs))
+            dirtyCurrentTs.clear()
+        }
     }
 
     /** Run a shell command and return (success, combined output). Mirrors AgentExtenderConfigurable.runInstallCommand. */

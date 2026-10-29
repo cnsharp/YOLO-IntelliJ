@@ -20,8 +20,10 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
@@ -102,7 +104,8 @@ class YoloToolWindowFactory : ToolWindowFactory {
         // up and still applies the width to the first layout only.
         seedInitialWidth(toolWindow)
         val panel = YoloPanel(project)
-        val content = ContentFactory.getInstance().createContent(panel, null, false)
+        // Single content → leave its tab label empty so the redundant "Terminal" strip is hidden.
+        val content = ContentFactory.getInstance().createContent(panel, "", false)
         content.setDisposer(panel)
         toolWindow.contentManager.addContent(content)
     }
@@ -178,16 +181,26 @@ private class YoloPanel(
     private companion object {
         /** CardLayout key for [contentArea]: the empty placeholder shown before any terminal is launched. */
         const val CARD_EMPTY = "empty"
+        /** Sentinel id/command for the always-present "Manage Agents" dropdown entry (opens the tab). */
+        const val MANAGE_AGENTS_ID = "__manage_agents__"
     }
 
     private val LOG = Logger.getInstance(YoloPanel::class.java)
+
+    /** Robot icon for the "Manage Agents..." dropdown entry (bundled so it works on all IDE builds). */
+    private val robotIcon = IconLoader.getIcon("/icons/robot.svg", javaClass)
 
     private val agentCombo = ComboBox<AgentRow>().apply {
         renderer = object : SimpleListCellRenderer<AgentRow>() {
             override fun customize(list: JList<out AgentRow>, value: AgentRow?, index: Int, selected: Boolean, hasFocus: Boolean) {
                 if (value != null) {
-                    // The "AI Agents" prompt item carries no command, so it shows no agent icon.
-                    icon = if (value.command.isBlank()) null else AgentIcons.forAgent(value.id, value.iconPath)
+                    icon = when {
+                        // The "Manage Agents" entry shows a robot icon (it opens the Agent Manager page).
+                        value.id == MANAGE_AGENTS_ID -> robotIcon
+                        // The "AI Agents" prompt item carries no command, so it shows no agent icon.
+                        value.command.isBlank() -> null
+                        else -> AgentIcons.forAgent(value.id, value.iconPath)
+                    }
                     text = value.displayName
                 }
             }
@@ -359,6 +372,7 @@ private class YoloPanel(
         val group = DefaultActionGroup().apply {
             add(SkipPermissionsAction())
             add(ResumeAction())
+            add(ManageAgentsAction())
             add(OpenSettingsAction())
         }
         val toolbar = ActionManager.getInstance().createActionToolbar("YOLO.Toolbar", group, true)
@@ -412,6 +426,12 @@ private class YoloPanel(
                 override fun changed() = populateFromCache(buildRows())
             })
 
+        // Selecting the always-present "Manage Agents" dropdown entry opens its tool-window tab.
+        agentCombo.addActionListener {
+            val row = agentCombo.selectedItem as? AgentRow ?: return@addActionListener
+            if (row.id == MANAGE_AGENTS_ID) openManageTab()
+        }
+
         rebuild()
     }
 
@@ -427,7 +447,7 @@ private class YoloPanel(
     /** Populate the dropdown from the persisted installed-agents cache (instant, no PATH probes). */
     private fun populateFromCache(rows: List<AgentRow>) {
         val installed = InstalledAgents.installed()
-        val visible = rows.filter { it.command.isBlank() || installed.contains(it.command.lowercase()) }
+        val visible = rows.filter { it.command.isBlank() || it.id == MANAGE_AGENTS_ID || installed.contains(it.command.lowercase()) }
         agentCombo.removeAllItems()
         visible.forEach { agentCombo.addItem(it) }
         selectDefaultAgent(visible)
@@ -535,14 +555,29 @@ private class YoloPanel(
                 )
             )
         }
+        // Always-present entry that opens the "Manage Agents" tool-window tab (mirrors the VSCode page).
+        addUnique(
+            AgentRow(
+                MANAGE_AGENTS_ID, message("panel.manageAgents.item"),
+                MANAGE_AGENTS_ID, "", "", "", ""
+            )
+        )
         return rows
     }
 
     private fun launchSelected() {
         val row = agentCombo.selectedItem as? AgentRow ?: return
+        // The "Manage Agents" entry opens the agent-manager tab instead of launching a terminal.
+        if (row.id == MANAGE_AGENTS_ID) { openManageTab(); return }
         // The default "AI Agents" prompt item has a blank command — never launch it.
         if (row.command.isBlank()) return
         maybeWarnAndLaunch(row)
+    }
+
+    /** Open the "Manage Agents" page as a tab in the MAIN EDITOR AREA (mirrors the VSCode Agent Manager). */
+    private fun openManageTab() {
+        val file = ManageAgentsEditorProvider.virtualFile(project)
+        FileEditorManager.getInstance(project).openFile(file, true)
     }
 
     /**
