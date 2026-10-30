@@ -104,6 +104,10 @@ class AgentExtenderConfigurable : Configurable {
      *  "Skip permissions" launch warning when ticked. */
     private val skipWarnCheckBox = JBCheckBox(message("settings.skipWarning.label"))
 
+    /** Settings checkbox mirroring [AgentExtenderSettings.State.autoCheckUpdatesOnStartup]: runs the same
+     *  agent update scan as the Manage Agents tab on IDE startup. Off by default. */
+    private val autoCheckUpdatesCheckBox = JBCheckBox(message("settings.autoCheckUpdates.label"))
+
     private var panel: JComponent? = null
 
     /** Whether there are unsaved changes: drives the platform Apply button's enabled/disabled state. */
@@ -167,6 +171,7 @@ class AgentExtenderConfigurable : Configurable {
             .addComponent(statusLabel)
             .addLabeledComponent(JBLabel(message("settings.linkColor.label")), linkColorButton)
             .addComponent(skipWarnCheckBox)
+            .addComponent(autoCheckUpdatesCheckBox)
             .panel
         reset()
         return panel!!
@@ -532,6 +537,7 @@ class AgentExtenderConfigurable : Configurable {
         return modified
             || (linkColor.rgb and 0xFFFFFF) != state.linkColorRgb
             || skipWarnCheckBox.isSelected != state.skipWarningDismissed
+            || autoCheckUpdatesCheckBox.isSelected != state.autoCheckUpdatesOnStartup
     }
 
     override fun apply() {
@@ -571,6 +577,7 @@ class AgentExtenderConfigurable : Configurable {
 
         // ①c Suppress the "Skip permissions" launch warning when the user ticks the checkbox.
         settings.state.skipWarningDismissed = skipWarnCheckBox.isSelected
+        settings.state.autoCheckUpdatesOnStartup = autoCheckUpdatesCheckBox.isSelected
 
         // ② Custom tools: skip promoted agents (they are not written to customTools); only save user custom tools
         settings.state.customTools = (0 until toolsModel.rowCount).mapNotNull { r ->
@@ -688,6 +695,7 @@ class AgentExtenderConfigurable : Configurable {
             refreshInstalledFlags()
             linkColor = Color(state.linkColorRgb)
             skipWarnCheckBox.isSelected = state.skipWarningDismissed
+            autoCheckUpdatesCheckBox.isSelected = state.autoCheckUpdatesOnStartup
             setStatus("", warn = false)
         } finally {
             rebuilding = false

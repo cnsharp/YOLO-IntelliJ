@@ -100,6 +100,13 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
          * warning never pops up again.
          */
         var skipWarningDismissed: Boolean = false
+        /**
+         * When true, the plugin runs the same agent version check on IDE startup that the Manage Agents
+         * tab runs (via [com.cnsharp.yolo.settings.AgentUpdateChecker.checkAll]). Off by default so a
+         * network scan (npm/pypi/brew/github) does not run unless the user opts in; the results feed the
+         * shared cache, so Manage Agents shows them immediately on open.
+         */
+        var autoCheckUpdatesOnStartup: Boolean = false
         // Last agent launched in the YOLO panel (by agent id); restored as the dropdown's default selection on next open.
         var lastAgentId: String = ""
         // Each agent's skip flag value (from Settings); whether it is injected is controlled by skipEnabled.

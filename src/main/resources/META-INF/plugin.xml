@@ -60,6 +60,13 @@
         <fileEditorProvider implementation="com.cnsharp.yolo.panel.ManageAgentsEditorProvider"/>
     </extensions>
 
+    <applicationListeners>
+        <!-- Post-startup: optionally run the same agent update scan as Manage Agents when the user enables
+             "Check for agent updates on startup" in Settings. -->
+        <listener class="com.cnsharp.yolo.settings.AutoUpdateStartupActivity"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+
 
     <actions>
         <!-- text/description omitted: resolved by the <resource-bundle> above via
