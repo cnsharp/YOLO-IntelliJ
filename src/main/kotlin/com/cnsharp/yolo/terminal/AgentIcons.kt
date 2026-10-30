@@ -10,13 +10,13 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
-import com.intellij.util.IconUtil
 import java.awt.Component
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.swing.Icon
+import javax.swing.ImageIcon
 import kotlin.math.max
 
 /**
@@ -94,7 +94,9 @@ object AgentIcons {
 
         // On a dark theme, monochrome/dark glyphs (black wordmarks like cline) are invisible; lighten them.
         // Colored brand marks (copilot, grok) read fine and keep their brand colour, so they are skipped.
-        val resolved = if (dark && isDarkMonochrome(icon)) IconUtil.colorize(icon, DARK_TINT) else icon
+        // Manual tint (no IconUtil.colorize): that method gained a Kotlin $default bridge in newer SDKs and
+        // breaks binary compatibility with IDEA 251, so we recolor opaque pixels to DARK_TINT ourselves.
+        val resolved = if (dark && isDarkMonochrome(icon)) tint(icon, DARK_TINT) else icon
 
         cache[key] = resolved
         return resolved
@@ -141,6 +143,33 @@ object AgentIcons {
         }
         if (opaque < w * h * 0.02) return false
         return lumSum / opaque < 0.55 && satSum / opaque < 0.25
+    }
+
+    /**
+     * Recolor every opaque pixel of [icon] to [color], preserving the original alpha. This is exactly what
+     * [com.intellij.util.IconUtil.colorize] does, but reimplemented to avoid linking against that method —
+     * its Kotlin overload acquired a synthetic `$default` bridge in newer IntelliJ SDKs that is absent from
+     * IDEA 251, causing a `NoSuchMethodError` at runtime.
+     */
+    private fun tint(icon: Icon, color: JBColor): Icon {
+        val w = icon.iconWidth
+        val h = icon.iconHeight
+        if (w <= 0 || h <= 0) return icon
+        val img = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
+        val g = img.createGraphics()
+        try {
+            icon.paintIcon(null, g, 0, 0)
+        } finally {
+            g.dispose()
+        }
+        val rgb = color.rgb and 0x00FFFFFF
+        for (y in 0 until h) for (x in 0 until w) {
+            val p = img.getRGB(x, y)
+            val a = p ushr 24 and 0xFF
+            if (a == 0) continue
+            img.setRGB(x, y, (a shl 24) or rgb)
+        }
+        return ImageIcon(img)
     }
 
     /** Load from local file; on failure return null to let the caller fall back, no exception thrown. */
