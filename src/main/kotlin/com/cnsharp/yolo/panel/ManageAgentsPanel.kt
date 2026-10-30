@@ -16,16 +16,17 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.ui.JBColor
+import com.intellij.ui.ColorUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.WrapLayout
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.Insets
 import javax.swing.BorderFactory
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -56,7 +57,7 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         addActionListener { updateAll() }
     }
 
-    private val grid = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.LEFT, JBUI.scale(12), JBUI.scale(12))).apply {
+    private val grid = JBPanel<JBPanel<*>>(WrapLayout(FlowLayout.LEFT, JBUI.scale(12), JBUI.scale(12))).apply {
         isOpaque = true
         background = UIUtil.getPanelBackground()
     }
@@ -100,9 +101,11 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
                 override fun changed() = app.invokeLater { rebuild() }
             })
 
-        rebuild()
-        // Mirror VSCode's Agent Manager: kick off the background version scan as soon as the page opens.
+        // Mirror VSCode's Agent Manager: seed cached versions (synchronous, inside checkAll) and kick off
+        // the background scan *before* the first paint, so remembered versions show immediately instead of
+        // flashing "-".
         if (!AgentUpdateChecker.isChecking()) AgentUpdateChecker.checkAll()
+        rebuild()
     }
 
     override fun dispose() {
@@ -248,26 +251,23 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         return panel
     }
 
-    private fun currentText(c: Card): String = when {
-        c.status == AgentUpdateChecker.Status.CHECKING && c.current.isBlank() -> message("manage.checking")
-        c.current.isNotBlank() -> c.current
-        c.installed -> message("manage.unknown")
-        else -> message("manage.notInstalled")
-    }
+    private fun currentText(c: Card): String =
+        if (c.current.isNotBlank()) c.current else "-"
 
-    private fun latestText(c: Card): String = when {
-        c.latest.isNotBlank() -> c.latest
-        c.status == AgentUpdateChecker.Status.CHECKING -> message("manage.checking")
-        else -> message("manage.unknown")
-    }
+    private fun latestText(c: Card): String =
+        if (c.latest.isNotBlank()) c.latest else "-"
 
     private fun actionBtn(label: String, primary: Boolean, onClick: () -> Unit): JButton =
         JButton(label).apply {
             if (primary) {
-                // Emphasise the primary action (the available update) with the button colour.
+                // Emphasise the primary action (the available update) with the accent fill. The label
+                // colour must contrast with the *accent* (the old code used the panel background, which
+                // blended into the page and hid the text). Pick black/white by the accent's luminance so
+                // it stays readable in both light and dark themes.
+                val accent = UIUtil.getActiveTextColor() ?: JBColor(0x2D7BD4, 0x4A9BFF)
+                background = accent
+                foreground = if (ColorUtil.isDark(accent)) JBColor.WHITE else JBColor.BLACK
                 isOpaque = true
-                background = UIUtil.getActiveTextColor()
-                foreground = UIUtil.getPanelBackground()
             }
             addActionListener { onClick() }
         }

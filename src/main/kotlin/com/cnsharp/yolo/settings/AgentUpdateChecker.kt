@@ -118,7 +118,12 @@ object AgentUpdateChecker {
                         LOG.warn("${Yolo.NAME}: update check failed for $cmd", e)
                         UpdateInfo(Status.ERROR)
                     }
-                    synchronized(results) { results[cmd] = info }
+                    synchronized(results) {
+                        // Keep a previously-known current version if this probe couldn't read one
+                        // (e.g. a momentary CLI hiccup), so the UI doesn't flicker back to "-".
+                        val prev = results[cmd]
+                        results[cmd] = info.copy(current = if (info.current.isNotBlank()) info.current else prev?.current ?: "")
+                    }
                     if (info.latest.isNotBlank()) markLatest(cmd, info.latest)
                     if (info.current.isNotBlank()) markCurrent(cmd, info.current)
                 }
@@ -138,7 +143,11 @@ object AgentUpdateChecker {
             LOG.warn("${Yolo.NAME}: update refresh failed for $command", e)
             UpdateInfo(Status.ERROR)
         }
-        synchronized(results) { results[command.lowercase()] = info }
+        synchronized(results) {
+            val prev = results[command.lowercase()]
+            results[command.lowercase()] =
+                info.copy(current = if (info.current.isNotBlank()) info.current else prev?.current ?: "")
+        }
         if (info.latest.isNotBlank()) markLatest(command, info.latest)
         if (info.current.isNotBlank()) markCurrent(command, info.current)
         flushLatest()
@@ -356,25 +365,33 @@ object AgentUpdateChecker {
     // -- persisted cache of last-known latest versions (cache-first on panel open) --
 
     private fun seedFromCache() {
-        if (seeded) return
-        seeded = true
         val now = System.currentTimeMillis()
         val latestMap = loadVersionMap(CACHE_KEY)
         val curMap = loadVersionMap(CACHE_KEY_CURRENT)
         val tsMap = loadTsMap(CACHE_KEY_CURRENT_TS)
         synchronized(results) {
-            for ((cmd, ver) in latestMap) {
-                val k = cmd.lowercase()
-                if (ver.isNotBlank() && !results.containsKey(k)) {
-                    results[k] = UpdateInfo(Status.NA, "", ver)
+            if (!seeded) {
+                for ((cmd, ver) in latestMap) {
+                    val k = cmd.lowercase()
+                    if (ver.isNotBlank() && !results.containsKey(k)) {
+                        results[k] = UpdateInfo(Status.NA, "", ver)
+                    }
                 }
+                seeded = true
             }
+            // The remembered *current* version is restored on every call (not just once) so a transient
+            // detection failure during a background scan can't blank a version we already knew. Without
+            // this, reopening the panel after a failed re-scan would show "-" until a successful rescan.
             for ((cmd, ver) in curMap) {
                 val k = cmd.lowercase()
                 val ts = tsMap[cmd] ?: 0L
                 if (ver.isNotBlank() && now - ts < CACHE_TTL_MS) {
                     val existing = results[k]
-                    results[k] = UpdateInfo(existing?.status ?: Status.NA, ver, existing?.latest ?: "")
+                    if (existing == null) {
+                        results[k] = UpdateInfo(Status.NA, ver, "")
+                    } else if (existing.current.isBlank()) {
+                        results[k] = existing.copy(current = ver)
+                    }
                 }
             }
         }
