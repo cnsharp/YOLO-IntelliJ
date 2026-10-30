@@ -1,5 +1,6 @@
 package com.cnsharp.yolo.launcher
 
+import com.cnsharp.yolo.YoloBundle
 import com.cnsharp.yolo.settings.AgentExtenderSettings
 import com.cnsharp.yolo.terminal.AgentIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -16,9 +17,17 @@ import javax.swing.Icon
  * The icon is a lowercase y: gray when off, red when on — visually consistent with a checkbox/toggle,
  * but the custom icon lets users immediately recognize this as the "skip permissions" switch.
  */
-/* Text is not hardcoded here: the <action> in plugin.xml already declares <resource-bundle>,
- * so the platform reads action.<id>.text / .description from YoloBundle and follows IDE language switching. */
+/* The toolbar adds this as a freshly-instantiated action (not the plugin.xml-registered singleton), so the
+ * platform does NOT inject the bundle text/description into its template presentation. Set the description here
+ * (icon-only button, so only the tooltip matters) so the hover tooltip still appears and follows the IDE language. */
 class SkipPermissionsAction : ToggleAction() {
+
+    init {
+        templatePresentation.text =
+            YoloBundle.message("action.com.cnsharp.yolo.SkipPermissionsAction.text")
+        templatePresentation.description =
+            YoloBundle.message("action.com.cnsharp.yolo.SkipPermissionsAction.description")
+    }
     override fun isSelected(e: AnActionEvent): Boolean =
         AgentExtenderSettings.getInstance().state.skipEnabled
 

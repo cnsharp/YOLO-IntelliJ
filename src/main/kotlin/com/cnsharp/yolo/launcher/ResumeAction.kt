@@ -1,5 +1,6 @@
 package com.cnsharp.yolo.launcher
 
+import com.cnsharp.yolo.YoloBundle
 import com.cnsharp.yolo.settings.AgentExtenderSettings
 import com.cnsharp.yolo.terminal.AgentIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -17,9 +18,17 @@ import com.intellij.openapi.actionSystem.ToggleAction
  *
  * The icon is a replay mark: gray when off, green when on — visually consistent with the Skip-permissions toggle.
  */
-/* Text is not hardcoded here: the <action> in plugin.xml already declares <resource-bundle>,
- * so the platform reads action.<id>.text / .description from YoloBundle and follows IDE language switching. */
+/* The toolbar adds this as a freshly-instantiated action (not the plugin.xml-registered singleton), so the
+ * platform does NOT inject the bundle text/description into its template presentation. Set the description here
+ * (icon-only button) so the hover tooltip appears and follows the IDE language. */
 class ResumeAction : ToggleAction() {
+
+    init {
+        templatePresentation.text =
+            YoloBundle.message("action.com.cnsharp.yolo.ResumeAction.text")
+        templatePresentation.description =
+            YoloBundle.message("action.com.cnsharp.yolo.ResumeAction.description")
+    }
     override fun isSelected(e: AnActionEvent): Boolean =
         AgentExtenderSettings.getInstance().state.resumeEnabled
 

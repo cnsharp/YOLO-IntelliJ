@@ -20,6 +20,13 @@ class ManageAgentsAction : AnAction() {
         // Set the robot icon here (not via the super constructor) so we don't reference `this` (javaClass)
         // before the instance is initialized. The bundled robot.svg works on all IDE builds.
         templatePresentation.icon = IconLoader.getIcon("/icons/robot.svg", javaClass)
+        // The toolbar adds this as a freshly-instantiated action (not the plugin.xml-registered singleton),
+        // so the platform does NOT inject the bundle text/description into its template presentation. Set both
+        // text and description here (icon-only button) so the hover tooltip appears and follows the IDE language.
+        templatePresentation.text =
+            com.cnsharp.yolo.YoloBundle.message("action.com.cnsharp.yolo.ManageAgentsAction.text")
+        templatePresentation.description =
+            com.cnsharp.yolo.YoloBundle.message("action.com.cnsharp.yolo.ManageAgentsAction.description")
     }
 
     override fun actionPerformed(e: AnActionEvent) {
