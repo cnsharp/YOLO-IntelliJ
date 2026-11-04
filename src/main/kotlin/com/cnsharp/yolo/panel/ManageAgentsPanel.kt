@@ -169,7 +169,10 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         // Installed agents first, uninstalled last; within each group keep the registry's declared order
         // (sortedBy is stable). The installed set can change (install in this tab, background rescan), so
         // the sort is recomputed on every rebuild to stay consistent.
-        val cards = AgentRegistry.agents.map { cardFor(it) }
+        // Update page = official catalog only. User-defined custom tools live in
+        // AgentExtenderSettings and declare no install/version spec, so exclude any agent
+        // without one (also keeps this page correct if its source list is ever merged).
+        val cards = AgentRegistry.agents.filter { it.install != null }.map { cardFor(it) }
             .sortedBy { if (it.installed) 0 else 1 }
         grid.removeAll()
         if (cards.isEmpty()) {
