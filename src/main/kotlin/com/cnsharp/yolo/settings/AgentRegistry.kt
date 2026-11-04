@@ -8,8 +8,9 @@ import com.intellij.openapi.diagnostic.Logger
  *  - npm/pip/brew: install via the named package manager (`pkg`).
  *  - shell: run `cmd` verbatim through the user's login shell (curl/irm installers, …). `cmdWin` is the
  *    Windows-only variant (e.g. a PowerShell one-liner), used when [com.intellij.openapi.util.SystemInfo.isWindows].
- *    `updateCmd`, when set, is the agent's *own* self-update subcommand (e.g. `claude update`); the Update
- *    button runs it directly instead of re-running the installer or opening the site.
+ *  `updateCmd` (any type), when set, is the agent's *own* self-update subcommand (e.g. `claude update`); it is
+ *    first-class: the Update button runs it instead of the package manager, re-running the installer, or
+ *    opening the site.
  *  - url: no automatable package; the Install button opens `url` in the browser instead.
  *
  * `latest` is an optional structured source for the *latest* published version (mirrors the VSCode
@@ -58,8 +59,8 @@ data class InstallSpec(
         "shell" -> if (com.intellij.openapi.util.SystemInfo.isWindows && cmdWin.isNotBlank()) cmdWin else cmd
         else -> url
     }
-    /** True when the Update button can perform a real upgrade (package-manager spec, or a shell agent that
-     *  declares its own update subcommand). */
+    /** True when the Update button can perform a real upgrade (the agent's own `updateCmd`, or a
+     *  package-manager spec). */
     val hasUpdateCommand: Boolean get() = type in setOf("npm", "pip", "brew") || updateCmd.isNotBlank()
     /** True when a structured `latest` source is declared (so the version checker can query it over HTTP). */
     val hasLatestSource: Boolean get() = latest?.hasSource == true
@@ -143,6 +144,7 @@ object AgentRegistry {
         val resumeFlag: String = "",
         val skipEnv: SkipEnvJson? = null,
         val icon: String = "",
+        val url: String = "",
         val install: InstallSpec? = null
     ) {
         fun toAgentDef() = AgentDef(
@@ -153,6 +155,7 @@ object AgentRegistry {
             resumeFlag = resumeFlag,
             skipEnv = skipEnv?.let { it.name to it.value },
             icon = icon,
+            url = url,
             install = install
         )
     }

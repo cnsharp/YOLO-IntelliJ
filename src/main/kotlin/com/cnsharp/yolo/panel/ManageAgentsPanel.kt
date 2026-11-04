@@ -145,9 +145,16 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
 
     private fun busy(cmd: String): Boolean = cmd.isNotBlank() && cmd.lowercase() in busy
 
-    /** An upgrade is possible when the spec has a package-manager/update command, or a site to open. */
-    private fun canUpgrade(c: Card): Boolean =
-        c.spec?.let { it.hasUpdateCommand || it.url.isNotBlank() } == true
+    /**
+     * A headless upgrade can be run when the spec is npm/pip/brew, declares an explicit update subcommand,
+     * or is a shell agent with an install command (re-running the installer overwrites = updates, e.g. Cursor's
+     * `curl …/install | bash`). `url`-type agents have no command, so they fall back to opening the download
+     * page instead (handled separately below).
+     */
+    private fun canUpgrade(c: Card): Boolean {
+        val spec = c.spec ?: return false
+        return spec.hasUpdateCommand || (spec.type == "shell" && spec.target.isNotBlank())
+    }
 
     /** Install is offered for not-yet-installed automatable specs, or url specs (which open their page). */
     private fun canInstall(c: Card): Boolean {
@@ -224,24 +231,30 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
 
         // action buttons
         val actions = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), 0)).apply { isOpaque = false }
+        // Manual install/update opens the download page: prefer install.url, falling back to the homepage.
+        val downloadUrl = c.spec?.url?.takeIf { it.isNotBlank() } ?: c.url
+        // The Website button always opens the agent's homepage (top-level url only).
+        val siteUrl = c.url
         if (busy(c.command)) {
             actions.add(JButton(message("manage.working")).apply { isEnabled = false })
         } else {
             when {
                 c.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE && canUpgrade(c) ->
                     actions.add(actionBtn(message("manage.update"), true) { updateAgent(c) })
+                // Update detected but the plugin can't run an upgrade head-less (e.g. a shell agent with no
+                // updateCmd): keep the "Update" button but make it open the download page (install.url) so the
+                // user can upgrade manually, instead of leaving a dead-end "Update available" with no action.
+                c.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE && !canUpgrade(c) && downloadUrl.isNotBlank() ->
+                    actions.add(actionBtn(message("manage.update"), true) { BrowserUtil.browse(downloadUrl) })
                 !c.installed && canInstall(c) ->
                     actions.add(actionBtn(message("manage.install"), false) { installAgent(c, upgrade = false) })
                 c.installed && canUpgrade(c) &&
                     c.status != AgentUpdateChecker.Status.CHECKING && c.status != AgentUpdateChecker.Status.UP_TO_DATE ->
                     actions.add(actionBtn(message("manage.update"), false) { updateAgent(c) })
             }
-            // "Website" opens the agent's homepage (top-level url in agents.json). Fall back to the install
-            // page (install.url) for url-type agents that only declare that. This mirrors the VSCode Agent
-            // Manager, which shows the Website button for every agent that has a url.
-            val websiteUrl = c.url.ifBlank { c.spec?.url ?: "" }
-            if (websiteUrl.isNotBlank()) {
-                actions.add(actionBtn(message("manage.website"), false) { BrowserUtil.browse(websiteUrl) })
+            // "Website" always opens the agent's homepage (top-level url only).
+            if (siteUrl.isNotBlank()) {
+                actions.add(actionBtn(message("manage.website"), false) { BrowserUtil.browse(siteUrl) })
             }
         }
 
@@ -312,11 +325,15 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         val spec = c.spec ?: return
         val cmd = c.command
         if (cmd.isBlank() || busy(cmd)) return
-        if (spec.type == "url") {
-            if (spec.url.isNotBlank()) BrowserUtil.browse(spec.url)
-            return
+        // The agent's own `updateCmd` is first-class: an upgrade runs it regardless of install type.
+        val selfUpdate = upgrade && spec.updateCmd.isNotBlank()
+        if (!selfUpdate) {
+            if (spec.type == "url") {
+                if (spec.url.isNotBlank()) BrowserUtil.browse(spec.url)
+                return
+            }
+            if (!spec.automatable || spec.target.isBlank()) return
         }
-        if (!spec.automatable || spec.target.isBlank()) return
 
         busy.add(cmd.lowercase())
         rebuild()

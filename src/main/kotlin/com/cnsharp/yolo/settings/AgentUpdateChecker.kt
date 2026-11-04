@@ -254,17 +254,14 @@ object AgentUpdateChecker {
         }
     }
 
-    /** Mutating upgrade command. For `shell` agents that declare `updateCmd`, run that (the agent's own
-     *  self-update subcommand); otherwise fall back to re-running the installer, which also fetches latest. */
-    fun updateCommand(spec: InstallSpec): String = when (spec.type) {
+    /** Mutating upgrade command. A declared `updateCmd` (the agent's own self-update subcommand, e.g.
+     *  `claude update`) is first-class and wins for every install type; otherwise use the package manager,
+     *  or for `shell` re-run the installer, which also fetches latest. */
+    fun updateCommand(spec: InstallSpec): String = if (spec.updateCmd.isNotBlank()) spec.updateCmd else when (spec.type) {
         "npm" -> "npm install -g '${spec.pkg.replace("'", "'\\''")}'"
         "pip" -> "python3 -m pip install --upgrade '${spec.pkg.replace("'", "'\\''")}'"
         "brew" -> "brew upgrade '${spec.pkg.replace("'", "'\\''")}'"
-        "shell" -> when {
-            spec.updateCmd.isNotBlank() -> spec.updateCmd
-            SystemInfo.isWindows && spec.cmdWin.isNotBlank() -> spec.cmdWin
-            else -> spec.cmd
-        }
+        "shell" -> if (SystemInfo.isWindows && spec.cmdWin.isNotBlank()) spec.cmdWin else spec.cmd
         else -> ""
     }
 
@@ -356,9 +353,34 @@ object AgentUpdateChecker {
      *  group (or the whole match). Used for date-versioned tools whose install page is server-rendered. */
     private fun webLatest(src: WebSource): String {
         val html = fetchText(src.url) ?: return ""
+        return parseWebLatest(html, src.pattern)
+    }
+
+    /** Pure parser for a `web` latest source: given a page body and a regex `pattern`, return the
+     *  *highest* semver among all matches (or the first match for non-semver schemes). Extracted from
+     *  [webLatest] so it can be unit-tested without network access. */
+    internal fun parseWebLatest(html: String, pattern: String): String {
         return try {
-            val m = Regex(src.pattern, RegexOption.MULTILINE).find(html)
-            if (m != null) (if (m.groupValues.size > 1) m.groupValues[1] else m.groupValues[0]) else ""
+            val matches = Regex(pattern, RegexOption.MULTILINE).findAll(html).toList()
+            if (matches.isEmpty()) return ""
+            // A page may list many versions (e.g. a changelog jsonl). Report the *highest* semver
+            // rather than the first match, so updates aren't silently missed. For schemes that don't
+            // parse as semver (dates, build ids), fall back to the first match to keep prior behavior.
+            var best: String? = null
+            var bestSemver: IntArray? = null
+            for (m in matches) {
+                val raw = if (m.groupValues.size > 1) m.groupValues[1] else m.groupValues[0]
+                val sv = semverOf(raw)
+                if (sv != null) {
+                    if (bestSemver == null || compareSemver(sv, bestSemver) > 0) {
+                        bestSemver = sv
+                        best = raw
+                    }
+                } else if (best == null) {
+                    best = raw
+                }
+            }
+            best ?: ""
         } catch (e: Exception) { "" }
     }
 

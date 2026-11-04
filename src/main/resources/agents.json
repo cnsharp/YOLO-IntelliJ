@@ -31,7 +31,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
       "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
-      "updateCmd": "npm install -g @openai/codex@latest",
+      "updateCmd": "codex update",
       "latest": {
         "npm": "@openai/codex"
       }
@@ -50,6 +50,7 @@
       "type": "shell",
       "cmd": "curl https://cursor.com/install -fsS | bash",
       "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex",
+      "updateCmd": "agent update",
       "latest": {
         "web": {
           "url": "https://cursor.com/install",
@@ -90,6 +91,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://opencode.ai/install | bash",
       "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\"",
+      "updateCmd": "opencode upgrade",
       "latest": {
         "npm": "opencode-ai",
         "github": "anomalyco/opencode"
@@ -107,7 +109,8 @@
     "url": "https://aider.chat/",
     "install": {
       "type": "pip",
-      "pkg": "aider-chat"
+      "pkg": "aider-chat",
+      "updateCmd": "aider --upgrade"
     }
   },
   {
@@ -121,7 +124,8 @@
     "url": "https://cline.bot/",
     "install": {
       "type": "npm",
-      "pkg": "cline"
+      "pkg": "cline",
+      "updateCmd": "cline update"
     }
   },
   {
@@ -174,7 +178,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
       "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex",
-      "updateCmd": "kiro-cli update",
+      "updateCmd": "kiro-cli update --non-interactive",
       "latest": {
         "web": {
           "url": "https://prod.download.cli.kiro.dev/stable/latest/manifest.json",
@@ -198,7 +202,8 @@
     "url": "https://block.github.io/goose/",
     "install": {
       "type": "brew",
-      "pkg": "block-goose-cli"
+      "pkg": "block-goose-cli",
+      "updateCmd": "goose update"
     }
   },
   {
@@ -228,6 +233,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://ampcode.com/install.sh | bash",
       "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\"",
+      "updateCmd": "amp update",
       "latest": {
         "web": {
           "url": "https://static.ampcode.com/cli/cli-version.txt",
@@ -247,7 +253,8 @@
     "url": "https://kimi.moonshot.cn/",
     "install": {
       "type": "npm",
-      "pkg": "@moonshot-ai/kimi-code"
+      "pkg": "@moonshot-ai/kimi-code",
+      "updateCmd": "kimi upgrade -y"
     }
   },
   {
@@ -261,7 +268,8 @@
     "url": "https://qwen.ai/qwencode",
     "install": {
       "type": "npm",
-      "pkg": "@qwen-code/qwen-code"
+      "pkg": "@qwen-code/qwen-code",
+      "updateCmd": "qwen update"
     }
   },
   {
@@ -275,12 +283,12 @@
     "url": "https://www.trae.ai/",
     "install": {
       "type": "shell",
-      "cmd": "sh -c \"$(curl -L https://trae.cn/trae-cli/install.sh)\"",
-      "cmdWin": "irm https://trae.cn/trae-cli/install.ps1 | iex",
+      "cmd": "sh -c \"$(curl -fsSL https://trae.cn/trae-cli/install_v2.sh)\"",
+      "cmdWin": "irm https://trae.cn/trae-cli/install_v2.ps1 | iex",
       "latest": {
         "web": {
-          "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/trae-cli/trae-cli_latest_version.txt",
-          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+          "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/trae-cli/v2/public/stable/latest.json",
+          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
         }
       }
     }
@@ -296,7 +304,8 @@
     "url": "https://www.codebuddy.ai/",
     "install": {
       "type": "npm",
-      "pkg": "@tencent-ai/codebuddy-code"
+      "pkg": "@tencent-ai/codebuddy-code",
+      "updateCmd": "codebuddy update"
     }
   },
   {
@@ -310,7 +319,8 @@
     "url": "https://qoder.com/",
     "install": {
       "type": "npm",
-      "pkg": "@qoder-ai/qodercli"
+      "pkg": "@qoder-ai/qodercli",
+      "updateCmd": "qoder update"
     }
   },
   {
@@ -326,6 +336,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://cli.devin.ai/install.sh | bash",
       "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex",
+      "updateCmd": "devin update",
       "latest": {
         "web": {
           "url": "https://static.devin.ai/cli/current/manifest.json",
@@ -345,7 +356,8 @@
     "url": "https://grok.com/",
     "install": {
       "type": "npm",
-      "pkg": "@xai-official/grok"
+      "pkg": "@xai-official/grok",
+      "updateCmd": "grok update"
     }
   },
   {
@@ -381,7 +393,8 @@
     "url": "https://mistral.ai/",
     "install": {
       "type": "pip",
-      "pkg": "mistral-vibe"
+      "pkg": "mistral-vibe",
+      "updateCmd": "vibe update"
     }
   },
   {
@@ -395,7 +408,8 @@
     "url": "https://kilocode.ai/",
     "install": {
       "type": "npm",
-      "pkg": "@kilocode/cli"
+      "pkg": "@kilocode/cli",
+      "updateCmd": "kilo upgrade"
     }
   },
   {
@@ -413,7 +427,7 @@
       "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
       "updateCmd": "hermes update",
       "latest": {
-        "pypi": "hermes-agent"
+        "github": "NousResearch/hermes-agent"
       }
     }
   },
@@ -428,7 +442,8 @@
     "url": "https://pi.dev/",
     "install": {
       "type": "npm",
-      "pkg": "@earendil-works/pi-coding-agent"
+      "pkg": "@earendil-works/pi-coding-agent",
+      "updateCmd": "pi update --self"
     }
   },
   {
@@ -444,6 +459,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://app.factory.ai/cli | sh",
       "cmdWin": "irm https://app.factory.ai/cli/windows | iex",
+      "updateCmd": "droid update",
       "latest": {
         "web": {
           "url": "https://app.factory.ai/cli",
@@ -463,7 +479,8 @@
     "url": "https://augmentcode.com/",
     "install": {
       "type": "npm",
-      "pkg": "@augmentcode/auggie"
+      "pkg": "@augmentcode/auggie",
+      "updateCmd": "auggie upgrade --skip-confirmation"
     }
   },
   {
@@ -479,6 +496,7 @@
       "type": "shell",
       "cmd": "curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh",
       "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\"",
+      "updateCmd": "prime-agent update",
       "latest": {
         "web": {
           "url": "https://pub-728493de92a943e2a9b2d17b4719f318.r2.dev/stable",
@@ -498,7 +516,8 @@
     "url": "https://autohand.ai/",
     "install": {
       "type": "npm",
-      "pkg": "autohand-cli"
+      "pkg": "autohand-cli",
+      "updateCmd": "autohand update"
     }
   },
   {
@@ -512,7 +531,8 @@
     "url": "https://commandcode.ai/",
     "install": {
       "type": "npm",
-      "pkg": "command-code"
+      "pkg": "command-code",
+      "updateCmd": "command-code update"
     }
   },
   {
@@ -528,10 +548,11 @@
       "type": "shell",
       "cmd": "curl -fsSL https://ante.run/install.sh | bash",
       "cmdWin": "irm https://ante.run/install.ps1 | iex",
+      "updateCmd": "ante update",
       "latest": {
         "web": {
           "url": "https://download.ante.run/channels/stable/manifest.json",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          "pattern": "\"version\"\\s*:\\s*\"v?([^\"]+)\""
         }
       }
     }
@@ -553,19 +574,19 @@
   {
     "id": "omp",
     "baseArgs": "",
-    "displayName": "OMP",
+    "displayName": "Oh My Pi",
     "command": "omp",
     "skipFlag": "",
     "resumeFlag": "--resume",
     "icon": "omp.svg",
-    "url": "https://ohmyposh.dev/",
+    "url": "https://omp.sh/",
     "install": {
       "type": "shell",
-      "cmd": "curl -s https://ohmyposh.dev/install.sh | bash -s",
-      "cmdWin": "winget install JanDeDobbeleer.OhMyPosh -s winget",
-      "updateCmd": "oh-my-posh upgrade",
+      "cmd": "curl -fsSL https://omp.sh/install | sh",
+      "cmdWin": "irm https://omp.sh/install.ps1 | iex",
+      "updateCmd": "omp update",
       "latest": {
-        "brew": "oh-my-posh"
+        "npm": "@oh-my-pi/pi-coding-agent"
       }
     }
   },
@@ -596,6 +617,7 @@
       "type": "shell",
       "cmd": "curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh",
       "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex",
+      "updateCmd": "cortex update",
       "latest": {
         "web": {
           "url": "https://sfc-repo.snowflakecomputing.com/cortex-code-cli/a4643c4278/stable_version.txt",
@@ -615,7 +637,10 @@
     "url": "https://corust.ai/",
     "install": {
       "type": "brew",
-      "pkg": "Corust-ai/cli/corust"
+      "pkg": "Corust-ai/cli/corust",
+      "latest": {
+        "github": "Corust-ai/homebrew-cli"
+      }
     }
   },
   {
@@ -632,7 +657,7 @@
       "cmd": "curl -fsSL https://crow-ai.dev/install.sh | bash",
       "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\"",
       "latest": {
-        "github": "crow-cli/crow-cli"
+        "pypi": "crow-cli"
       }
     }
   },
@@ -661,7 +686,8 @@
     "url": "https://dirac.run",
     "install": {
       "type": "npm",
-      "pkg": "dirac-cli"
+      "pkg": "dirac-cli",
+      "updateCmd": "dirac update"
     }
   },
   {
@@ -672,10 +698,11 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "dimcode.png",
-    "url": "https://dimcode.dev/docs/acp.html",
+    "url": "https://dimagent.com/docs/acp.html",
     "install": {
       "type": "npm",
-      "pkg": "dimcode"
+      "pkg": "dimcode",
+      "updateCmd": "dim upgrade"
     }
   },
   {
@@ -719,6 +746,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://harnlang.com/install.sh | sh",
       "cmdWin": "irm https://harnlang.com/install.ps1 | iex",
+      "updateCmd": "harn upgrade",
       "latest": {
         "github": "burin-labs/harn"
       }
@@ -737,6 +765,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://junie.jetbrains.com/install.sh | bash",
       "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex",
+      "updateCmd": "junie update",
       "latest": {
         "web": {
           "url": "https://raw.githubusercontent.com/jetbrains-junie/junie/main/update-info.jsonl",
@@ -770,7 +799,8 @@
     "url": "https://www.compassap.ai/portfolio/nova.html",
     "install": {
       "type": "npm",
-      "pkg": "@compass-ai/nova"
+      "pkg": "@compass-ai/nova",
+      "updateCmd": "nova update"
     }
   },
   {
@@ -786,6 +816,7 @@
       "type": "shell",
       "cmd": "curl -fsSL https://downloads.poolside.ai/pool/install.sh | sh",
       "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex",
+      "updateCmd": "pool update",
       "latest": {
         "web": {
           "url": "https://downloads.poolside.ai/pool/pool-latest-version.txt",
@@ -802,7 +833,7 @@
     "skipFlag": "",
     "resumeFlag": "",
     "icon": "sigit.png",
-    "url": "https://smbcloud.xyz",
+    "url": "https://sigit.si/code",
     "install": {
       "type": "npm",
       "pkg": "@getsigit/sigit"
@@ -821,6 +852,7 @@
       "type": "shell",
       "cmd": "curl -sSL https://stakpak.dev/install.sh | sh",
       "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\"",
+      "updateCmd": "stakpak update",
       "latest": {
         "github": "stakpak/agent"
       }
