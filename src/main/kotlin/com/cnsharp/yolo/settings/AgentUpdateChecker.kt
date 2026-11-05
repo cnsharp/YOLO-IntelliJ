@@ -40,11 +40,10 @@ object AgentUpdateChecker {
 
     /** Single probe timeout - a hung --version or registry query must not stall the whole scan. */
     private const val PROBE_TIMEOUT_MS = 20_000
-    /** Key under which last-known latest versions are persisted (cache-first on panel open). */
+    /** Keys under which last-known versions are persisted (cache-first on panel open). Neither has a
+     *  TTL: a remembered version stays until the next successful scan refreshes it. */
     private const val CACHE_KEY = "yolo.latestVersions"
     private const val CACHE_KEY_CURRENT = "yolo.currentVersions"
-    private const val CACHE_KEY_CURRENT_TS = "yolo.currentVersions.ts"
-    private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
 
     @Volatile private var checking = false
     private val lock = Any()
@@ -53,7 +52,6 @@ object AgentUpdateChecker {
     /** Detections collected during a scan, flushed to PropertiesComponent once at the end. */
     private val dirtyLatest = mutableMapOf<String, String>()
     private val dirtyCurrent = mutableMapOf<String, String>()
-    private val dirtyCurrentTs = mutableMapOf<String, Long>()
     /** Ensures the persisted cache is loaded into results at most once (status NA, version shown). */
     private var seeded = false
 
@@ -384,13 +382,11 @@ object AgentUpdateChecker {
         } catch (e: Exception) { "" }
     }
 
-    // -- persisted cache of last-known latest versions (cache-first on panel open) --
+    // -- persisted cache of last-known versions (cache-first on panel open) --
 
     private fun seedFromCache() {
-        val now = System.currentTimeMillis()
         val latestMap = loadVersionMap(CACHE_KEY)
         val curMap = loadVersionMap(CACHE_KEY_CURRENT)
-        val tsMap = loadTsMap(CACHE_KEY_CURRENT_TS)
         synchronized(results) {
             if (!seeded) {
                 for ((cmd, ver) in latestMap) {
@@ -404,10 +400,10 @@ object AgentUpdateChecker {
             // The remembered *current* version is restored on every call (not just once) so a transient
             // detection failure during a background scan can't blank a version we already knew. Without
             // this, reopening the panel after a failed re-scan would show "-" until a successful rescan.
+            // Like the latest-version cache it has no TTL; only a successful scan refreshes it.
             for ((cmd, ver) in curMap) {
                 val k = cmd.lowercase()
-                val ts = tsMap[cmd] ?: 0L
-                if (ver.isNotBlank() && now - ts < CACHE_TTL_MS) {
+                if (ver.isNotBlank()) {
                     val existing = results[k]
                     if (existing == null) {
                         results[k] = UpdateInfo(Status.NA, ver, "")
@@ -424,21 +420,12 @@ object AgentUpdateChecker {
     }
 
     private fun markCurrent(command: String, version: String) {
-        if (version.isNotBlank()) {
-            val k = command.lowercase()
-            dirtyCurrent[k] = version
-            dirtyCurrentTs[k] = System.currentTimeMillis()
-        }
+        if (version.isNotBlank()) dirtyCurrent[command.lowercase()] = version
     }
 
     private fun loadVersionMap(key: String): Map<String, String> = try {
         val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
         Gson().fromJson<Map<String, String>>(PropertiesComponent.getInstance().getValue(key) ?: "{}", type) ?: emptyMap()
-    } catch (e: Exception) { emptyMap() }
-
-    private fun loadTsMap(key: String): Map<String, Long> = try {
-        val type = object : com.google.gson.reflect.TypeToken<Map<String, Long>>() {}.type
-        Gson().fromJson<Map<String, Long>>(PropertiesComponent.getInstance().getValue(key) ?: "{}", type) ?: emptyMap()
     } catch (e: Exception) { emptyMap() }
 
     private fun flushLatest() {
@@ -460,10 +447,6 @@ object AgentUpdateChecker {
             existingCur.putAll(dirtyCurrent)
             pc.setValue(CACHE_KEY_CURRENT, Gson().toJson(existingCur))
             dirtyCurrent.clear()
-            val existingTs = loadTsMap(CACHE_KEY_CURRENT_TS).toMutableMap()
-            existingTs.putAll(dirtyCurrentTs)
-            pc.setValue(CACHE_KEY_CURRENT_TS, Gson().toJson(existingTs))
-            dirtyCurrentTs.clear()
         }
     }
 
