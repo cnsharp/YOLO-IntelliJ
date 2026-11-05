@@ -446,8 +446,19 @@ private class YoloPanel(
 
     /** Populate the dropdown from the persisted installed-agents cache (instant, no PATH probes). */
     private fun populateFromCache(rows: List<AgentRow>) {
-        val installed = InstalledAgents.installed()
-        val visible = rows.filter { it.command.isBlank() || it.id == MANAGE_AGENTS_ID || installed.contains(it.command.lowercase()) }
+        val cached = InstalledAgents.installed()
+        // Startup detection (syncInstalledAgents) records the agents it probed into customTools. Until the
+        // first background PATH scan has filled the installed cache, fall back to those so a fresh sandbox
+        // never opens with an empty dropdown. If neither has data yet, show every row rather than nothing;
+        // the background rescan narrows the list to the installed set once it finishes.
+        val fallback = AgentExtenderSettings.getInstance().state.customTools
+            .map { it.command.lowercase().trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        val known = cached.ifEmpty { fallback }
+        val visible = if (known.isEmpty()) rows else rows.filter {
+            it.command.isBlank() || it.id == MANAGE_AGENTS_ID || known.contains(it.command.lowercase())
+        }
         agentCombo.removeAllItems()
         visible.forEach { agentCombo.addItem(it) }
         selectDefaultAgent(visible)

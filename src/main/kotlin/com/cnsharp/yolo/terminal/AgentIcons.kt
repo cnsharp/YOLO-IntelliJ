@@ -142,6 +142,11 @@ object AgentIcons {
             satSum += if (max == 0) 0.0 else (max - Math.min(r, Math.min(gc, b))) / max.toDouble()
         }
         if (opaque < w * h * 0.02) return false
+        // A near-full-bleed opaque background (app-style badges such as cursor.svg, pi.svg,
+        // opencode.png) is not a transparent glyph. Tinting every opaque pixel would flatten the
+        // badge into one solid gray square and erase its light mark. These already read on dark
+        // through that light glyph, so leave them untouched.
+        if (opaque > w * h * 0.85) return false
         return lumSum / opaque < 0.55 && satSum / opaque < 0.25
     }
 

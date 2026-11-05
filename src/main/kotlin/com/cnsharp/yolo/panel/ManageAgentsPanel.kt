@@ -213,7 +213,8 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         }
         if (c.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE) {
             head.add(JBLabel(message("manage.updateAvailable")).apply {
-                foreground = JBColor(0xCC8800, 0xE0B000)
+                // Same accent blue as the primary Update button (VSCode-like), readable on both themes.
+                foreground = JBColor(0x2D7BD4, 0x4A9BFF)
             }, BorderLayout.EAST)
         }
 
