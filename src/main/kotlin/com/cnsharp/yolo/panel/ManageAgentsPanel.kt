@@ -180,12 +180,16 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         } else {
             cards.forEach { grid.add(card(it)) }
         }
+        val checking = AgentUpdateChecker.isChecking()
         val updatable = cards.count {
             it.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE && canUpgrade(it) && !busy(it.command)
         }
         updateAllBtn.text = if (updatable > 0) message("manage.updateAllCount", updatable) else message("manage.updateAll")
-        updateAllBtn.isEnabled = !AgentUpdateChecker.isChecking() && updatable > 0
-        checkUpdatesBtn.isEnabled = !AgentUpdateChecker.isChecking()
+        updateAllBtn.isEnabled = !checking && updatable > 0
+        checkUpdatesBtn.isEnabled = !checking
+        // Reflect an in-flight scan on the button itself, not just by disabling it. Also applies to
+        // the automatic check triggered on panel open, since that publishes CHECKING too.
+        checkUpdatesBtn.text = if (checking) message("manage.checking") else message("manage.checkUpdates")
         grid.revalidate()
         grid.repaint()
     }

@@ -92,7 +92,14 @@ object AgentUpdateChecker {
             checking = true
         }
         seedFromCache()
-        val installed = InstalledAgents.installed()
+        // Until the first background PATH scan fills the installed cache, fall back to the agents
+        // already recorded in customTools so a fresh session still has targets to check.
+        val installed = InstalledAgents.installed().ifEmpty {
+            AgentExtenderSettings.getInstance().state.customTools
+                .map { it.command.lowercase().trim() }
+                .filter { it.isNotBlank() }
+                .toSet()
+        }
         val specs = AgentRegistry.agents.mapNotNull { def ->
             val spec = def.install ?: return@mapNotNull null
             if (!spec.automatable && !spec.hasLatestSource) return@mapNotNull null
@@ -129,6 +136,9 @@ object AgentUpdateChecker {
             } finally {
                 checking = false
                 flushLatest()
+                // Publish after the flag is cleared so listeners rebuild with the finished state
+                // (re-enable the button, restore its label) instead of staying "Checking…".
+                publish()
             }
         }
     }
