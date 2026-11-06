@@ -32,6 +32,12 @@
          the whole family (PyCharm, GoLand, Rider, …) — not just Java-capable ones. No per-language
          dependency or reflection is needed: each language plugin contributes its own PSI-backed impl. -->
     <depends>com.intellij.modules.lang</depends>
+    <!-- PTY4J ships in the platform lib up to 2026.2 (visible to every plugin's class loader), but from
+         2026.3 (build 263) it is a separate `com.intellij.modules.pty4j` plugin whose classes live in
+         that plugin's class loader. Declaring it as an OPTIONAL dependency makes com.pty4j.* visible
+         on 263+ without forcing older IDEs (which have no such plugin id) to reject this plugin.
+         The panel creates its PTY directly via PtyProcessBuilder (YoloToolWindowFactory). -->
+    <depends optional="true">com.intellij.modules.pty4j</depends>
 
     <!-- Default (English) resource bundle for all user-visible text; YoloBundle_zh.properties provides Chinese.
          The action's text/description is also resolved by the platform from here via action.<id>.text. -->

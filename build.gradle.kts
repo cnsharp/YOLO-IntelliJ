@@ -110,16 +110,17 @@ repositories {
 }
 
 dependencies {
+    // When a local IDEA is present, use `local` (offline, no download); if CI/Release
+    // doesn't provide that property, fall back to `create` (downloads).
+    // Resolution order: -PlocalIdeaPath (CLI) > local.properties (gitignored) > download.
+    val localProps = Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    val localIdeaPath = providers.gradleProperty("localIdeaPath").orNull
+        ?: localProps.getProperty("localIdeaPath")
+
     intellijPlatform {
-        // When a local IDEA is present, use `local` (offline, no download); if CI/Release
-        // doesn't provide that property, fall back to `create` (downloads).
-        // Resolution order: -PlocalIdeaPath (CLI) > local.properties (gitignored) > download.
-        val localProps = Properties().apply {
-            val f = rootProject.file("local.properties")
-            if (f.exists()) f.inputStream().use { load(it) }
-        }
-        val localIdeaPath = providers.gradleProperty("localIdeaPath").orNull
-            ?: localProps.getProperty("localIdeaPath")
         if (localIdeaPath != null) {
             local(file(localIdeaPath))
         } else {
@@ -129,6 +130,18 @@ dependencies {
             // com.intellij.gotoClassContributor EP), so Community is a valid, stricter baseline.
             create(IntelliJPlatformType.IntellijIdeaCommunity, "2023.3")
         }
+    }
+
+    // PTY4J is in lib/ up to 2026.2, but from 2026.3 (263) it is a separate bundled plugin whose
+    // classes live in a module jar under plugins/pty4j-plugin/lib/modules/. Once plugin.xml declares
+    // <depends> on that plugin, the platform Gradle plugin resolves the classpath from the dependency
+    // list and no longer sweeps this module jar in, so add it explicitly for compilation. compileOnly
+    // keeps it out of the distributable: at runtime the IDE provides it (platform lib on <=262, the
+    // pty4j plugin on 263+). Empty on older IDEs, where lib/ is already on the classpath.
+    if (localIdeaPath != null) {
+        compileOnly(fileTree("$localIdeaPath/Contents/plugins/pty4j-plugin/lib/modules") {
+            include("intellij.libraries.pty4j.jar")
+        })
     }
 }
 
