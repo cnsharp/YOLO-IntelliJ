@@ -22,6 +22,8 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.DoNotAskOption
+import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.SystemInfo
@@ -610,11 +612,12 @@ private class YoloPanel(
         }
 
         var doNotAskAgain = false
-        // Type as DialogWrapper.DoNotAskOption (not the bare com.intellij.openapi.ui.DoNotAskOption):
-        // the bare-DoNotAskOption overloads of Messages.showOkCancelDialog were removed by 2023.3/2025.2,
-        // but the DialogWrapper.DoNotAskOption overloads exist continuously from 2023.3 through 2026, so
-        // this keeps the warning dialog binary-compatible across the whole supported range.
-        val doNotAsk = object : com.intellij.openapi.ui.DialogWrapper.DoNotAskOption {
+        // Use the top-level com.intellij.openapi.ui.DoNotAskOption (available since 2021.3), not the
+        // deprecated, scheduled-for-removal DialogWrapper.DoNotAskOption. Messages.showOkCancelDialog
+        // only gained an overload for the top-level type in 2025.3 — on 2023.3–2025.2 it accepts just
+        // the deprecated nested type. MessageDialogBuilder.doNotAsk has always taken the top-level
+        // interface, so this stays binary-compatible across sinceBuild 233 → 263 without a deprecated API.
+        val doNotAsk = object : DoNotAskOption {
             override fun isToBeShown(): Boolean = true
             override fun setToBeShown(toBeShown: Boolean, exitCode: Int) {
                 // Checkbox checked ⇒ "don't show again" ⇒ toBeShown is false.
@@ -624,17 +627,15 @@ private class YoloPanel(
             override fun shouldSaveOptionsOnCancel(): Boolean = false
             override fun getDoNotShowMessage(): String = message("warning.skip.doNotShow")
         }
-        val result = Messages.showOkCancelDialog(
-            project,
-            message("warning.skip.body"),
-            message("warning.skip.title"),
-            message("button.launchAnyway"),
-            Messages.getCancelButton(),
-            Messages.getWarningIcon(),
-            doNotAsk
-        )
+        // okCancel takes (title, message) — reversed relative to showOkCancelDialog's (message, title).
+        val ok = MessageDialogBuilder.okCancel(message("warning.skip.title"), message("warning.skip.body"))
+            .yesText(message("button.launchAnyway"))
+            .noText(Messages.getCancelButton())
+            .icon(Messages.getWarningIcon())
+            .doNotAsk(doNotAsk)
+            .ask(project)
         // Cancel (or dialog closed) ⇒ abort the launch entirely.
-        if (result != Messages.OK) return
+        if (!ok) return
         if (doNotAskAgain) settings.skipWarningDismissed = true
         launch(row)
     }
