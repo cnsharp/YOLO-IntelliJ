@@ -32,7 +32,9 @@ class ManageAgentsAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val file = ManageAgentsEditorProvider.virtualFile(project)
-        FileEditorManager.getInstance(project).openFile(file, true)
+        // Avoid FileEditorManager.Companion: compiled against the 263 SDK, Kotlin links that
+        // companion (263-only), which is absent on <=262 and fails binary compatibility.
+        project.getService(FileEditorManager::class.java).openFile(file, true)
     }
 
     /** No update logic; the icon and text are static, so evaluating on a background thread is fine. */

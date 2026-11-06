@@ -41,7 +41,9 @@ internal fun openFileAt(project: Project, file: File, line: Int?, column: Int?) 
     val vFile = LocalFileSystem.getInstance().findFileByIoFile(file) ?: return
     // OpenFileDescriptor uses 0-based line/column; agent output is 1-based.
     val descriptor = OpenFileDescriptor(project, vFile, (line ?: 1) - 1, (column ?: 1) - 1)
-    FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
+    // Avoid FileEditorManager.Companion: compiled against the 263 SDK, Kotlin links that
+    // companion (263-only), which is absent on <=262 and fails binary compatibility.
+    project.getService(FileEditorManager::class.java).openTextEditor(descriptor, true)
 }
 
 /**
