@@ -126,17 +126,6 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
          * as links without dominating the output; user-configurable via Settings | Tools | YOLO.
          */
         var linkColorRgb: Int = DEFAULT_LINK_COLOR_RGB
-        /**
-         * User-defined LLM providers (CC Switch-style). Each is a named backend (base url / api key ref /
-         * model) that a proxy-able agent can be bound to via [providerBindings]. The real api key is stored
-         * in the IDEA PasswordSafe, referenced by [LlmProvider.apiKeyRef].
-         */
-        var providers: MutableList<LlmProvider> = mutableListOf()
-        /**
-         * Per-agent provider binding, keyed by lower-cased agent id → [LlmProvider.id].
-         * Absent (or blank) means "use the agent's official default backend" (no env injection).
-         */
-        var providerBindings: MutableMap<String, String> = mutableMapOf()
     }
 
     companion object {

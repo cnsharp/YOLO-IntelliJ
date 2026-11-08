@@ -131,12 +131,6 @@ class AgentExtenderConfigurable : Configurable {
         // duplicate checks also run immediately so the user sees conflicts while editing, not only at Apply time.
         installListeners()
 
-        // Keep the Providers button's enabled state in sync with the selected agent (only proxy-able + installed).
-        toolsTable.selectionModel.addListSelectionListener { e ->
-            if (e.valueIsAdjusting) return@addListSelectionListener
-            updateProvidersButtonState()
-        }
-
         val helpLabel = JBLabel(AllIcons.General.ContextHelp).apply {
             // Anchor the hint to the RIGHT of the "?" icon. ContextHelpLabel hardcodes
             // Alignment.HELP_BUTTON, whose popup can sit under the tiny icon and make the
@@ -155,10 +149,7 @@ class AgentExtenderConfigurable : Configurable {
             add(addToolButton())
             add(removeToolButton())
             add(validateButton())
-            add(providersButton())
         }
-        // Initialize the Providers button's enabled state now that it has been created.
-        updateProvidersButtonState()
 
         panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(titleWithHelp, JBScrollPane(toolsTable), true)
@@ -219,50 +210,6 @@ class AgentExtenderConfigurable : Configurable {
             setStatus(message("status.removed"), warn = false)
         }
         return button
-    }
-
-    /** "Providers…" opens the per-agent LLM provider dialog (2.0, not yet finished). The button is intentionally
-     *  hidden until that feature lands, so it is not exposed prematurely. Kept wired (lateinit + enable logic)
-     *  so un-hiding later is a one-line change. See LlmProviderSupport. */
-    private lateinit var providersButton: JButton
-    /** "Install": installs the selected agent via its declared method (npm/pip/brew/shell). Disabled by default
-     *  and only enabled for a selected row whose agent declares an automatable install spec and is not installed.
-     *  Agents whose spec is type "url" (no package manager) keep the button enabled to open their download page. */
-    private fun providersButton(): JComponent {
-        val button = JButton(message("button.providers"))
-        button.toolTipText = message("button.providers.tooltip")
-        // Feature not finished (2.0): keep the button out of the UI until then.
-        button.isVisible = false
-        button.addActionListener {
-            val row = toolsTable.selectedRow
-            if (row < 0) {
-                setStatus(message("status.selectRow"), warn = true)
-                return@addActionListener
-            }
-            val id = (toolsModel.getValueAt(row, COL_ID) as? String)?.trim() ?: ""
-            val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
-            val display = (toolsModel.getValueAt(row, COL_DISPLAY) as? String)?.trim() ?: id
-            ProviderDialog(id, display, command).show()
-        }
-        providersButton = button
-        return button
-    }
-
-    /** Reflect the selected agent's proxy-able/installed status into the Providers button's enabled state. */
-    private fun updateProvidersButtonState() {
-        val row = toolsTable.selectedRow
-        val enabled = if (row < 0) false else {
-            val command = (toolsModel.getValueAt(row, COL_COMMAND) as? String)?.trim() ?: ""
-            LlmProviderSupport.isProviderConfigurable(
-                command, InstalledAgents.installed()
-            )
-        }
-        providersButton.isEnabled = enabled
-        providersButton.toolTipText = if (enabled) {
-            message("button.providers.tooltip")
-        } else {
-            message("button.providers.tooltip.disabled")
-        }
     }
 
     /** Resolve the selected row's install spec (by command first, then by id). */

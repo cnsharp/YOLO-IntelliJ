@@ -669,26 +669,6 @@ private class YoloPanel(
             envPair?.let { (name, value) -> env[name] = value }
         }
 
-        // LLM provider injection (2.0): if this agent is bound to a user-defined provider, point it at that
-        // backend. Env-based agents (claude/goose/aider/gemini) get spawn-env overrides; config-file agents
-        // (codex/opencode/codebuddy) get their config file written/merged and the api-key env var injected.
-        // In both cases the api key is resolved from PasswordSafe and never appears in plaintext here.
-        val boundProviderId = settings.providerBindings[row.id.lowercase()]
-        if (!boundProviderId.isNullOrBlank()) {
-            val provider = settings.providers.find { it.id == boundProviderId }
-            if (provider != null) {
-                if (AgentConfigInjector.configBased(row.id)) {
-                    for ((name, value) in AgentConfigInjector.applyConfig(provider, row.id.lowercase())) {
-                        env[name] = value
-                    }
-                } else {
-                    for ((name, value) in LlmProviderSupport.toEnv(provider, row.id.lowercase())) {
-                        env[name] = value
-                    }
-                }
-            }
-        }
-
         // When "Resume session" is on, append the agent's resume flag (e.g. -r / --resume) so the agent
         // continues a previous session. Agents with no resumeFlag are launched unchanged.
         if (settings.resumeEnabled && row.resumeFlag.isNotBlank()) {
