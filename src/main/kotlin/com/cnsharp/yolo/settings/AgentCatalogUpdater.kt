@@ -92,6 +92,13 @@ object AgentCatalogUpdater {
      */
     fun refreshBlocking() = refresh()
 
+    /**
+     * Download any missing icons for the CURRENT live catalog (whatever refresh() settled on).
+     * Called unconditionally after [refreshBlocking] so a failed download is retried even when
+     * a later startup gets 304 (no catalog change). Blocks on network I/O — call off the EDT.
+     */
+    fun downloadIconsForCurrent() = downloadMissingIcons(AgentRegistry.agents)
+
     private data class Fetch(val text: String, val etag: String?)
 
     private fun fetch(etag: String?): Fetch? = try {
@@ -157,9 +164,10 @@ object AgentCatalogUpdater {
         }
 
         AgentRegistry.replaceAll(merged)
-        downloadMissingIcons(merged)
-        // Deliberately no fireChanged() here: the startup sequence publishes once after it has also
-        // probed installed commands, so the UI never renders against a catalog/installed mismatch.
+        // Icons are downloaded unconditionally by downloadIconsForCurrent() after this returns,
+        // covering 304/failure paths too. Deliberately no fireChanged() here: the startup sequence
+        // publishes once after probing installed commands, so the UI never renders against a
+        // catalog/installed mismatch.
     }
 
     /** Download icons not bundled and not yet cached, into <config>/yolo/icons/agents. */

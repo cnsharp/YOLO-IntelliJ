@@ -1,5 +1,6 @@
 package com.cnsharp.yolo.settings
 
+import com.cnsharp.yolo.terminal.AgentIcons
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
@@ -64,6 +65,9 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
             // final registry. Probing installs first made a freshly added agent (e.g. qoder) get judged
             // against a stale/partial catalog, so it only appeared after a restart warmed the cache.
             AgentCatalogUpdater.refreshBlocking()
+            // Download missing icons against the final catalog (also retries a prior failed
+            // download on a later 304), before the fireChanged() that rebuilds the lists.
+            AgentCatalogUpdater.downloadIconsForCurrent()
             syncInstalledAgents()
         }
     }
@@ -107,7 +111,12 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
         // Detection is complete — refresh every list that renders install state (terminal dropdown,
         // Manage Agents page, Settings table) on the EDT. This is what makes an uninstalled agent
         // (e.g. qoder after ~/.qoder was removed) disappear without a restart or manual reopen.
-        ApplicationManager.getApplication().invokeLater { fireChanged() }
+        ApplicationManager.getApplication().invokeLater {
+            // Hot-update may have downloaded/overwritten icons; drop cached ImageIcons so
+            // the rebuilt lists re-resolve to the real glyphs instead of a stale default.
+            AgentIcons.clearCache()
+            fireChanged()
+        }
     }
 
     override fun getState(): State = currentState
