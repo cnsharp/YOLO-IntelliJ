@@ -27,6 +27,7 @@ import com.intellij.util.ui.FormBuilder
 import javax.swing.event.TableModelEvent
 import java.awt.Component
 import java.awt.Color
+import java.awt.Dimension
 import java.awt.BorderLayout
 import java.awt.image.BufferedImage
 import javax.swing.GrayFilter
@@ -215,21 +216,26 @@ class AgentExtenderConfigurable : Configurable {
     /** Resolve the selected row's install spec (by command first, then by id). */
     private fun iconChooserButton(): JComponent {
         val textField = JBTextField().apply {
+            // Read-only: the icon path can only be set through Browse, so there is no free-form input to validate.
+            isEditable = false
             toolTipText = message("icon.field.tooltip")
         }
         val browse = JButton(message("button.browse"))
         browse.toolTipText = message("button.browse.tooltip")
         fun syncEnabled() {
             val row = toolsTable.selectedRow
-            val locked = isLockedAgent(row)
-            textField.isEnabled = !locked
-            browse.isEnabled = !locked
+            // Disabled when no agent is selected, or when the selected one is locked (icon is fixed).
+            val enabled = row >= 0 && !isLockedAgent(row)
+            textField.isEnabled = enabled
+            browse.isEnabled = enabled
         }
         browse.addActionListener {
-            // `withFileFilter` (since 2019.2) is long-stable and non-deprecated on 2023.3 (our min) through 2026.2.
-            // `createSingleFileDescriptor(String)` (with a title) is the non-deprecated form; the no-arg overload
-            // is deprecated since 2025.x, so use the titled overload here.
-            val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor("Select icon file")
+            // `singleFile()` is the non-deprecated single-file factory (the `createSingleFileDescriptor()`
+            // overloads are deprecated since 2025.x). Note `createSingleFileDescriptor(String)` takes an
+            // extension, NOT a title — passing "Select icon file" there filters every icon out. Set the title
+            // with withTitle() and let withFileFilter do the svg/png filtering.
+            val descriptor = FileChooserDescriptorFactory.singleFile()
+                .withTitle("Select icon file")
                 .withFileFilter { it.extension == "svg" || it.extension == "png" }
             val initial = textField.text?.takeIf { it.isNotBlank() && !it.startsWith("http", true) }?.let {
                 LocalFileSystem.getInstance().findFileByPath(it)
@@ -239,9 +245,6 @@ class AgentExtenderConfigurable : Configurable {
                 writeSelectedRowIcon(textField.text)
             }
         }
-        textField.addActionListener {
-            if (toolsTable.selectedRow >= 0) writeSelectedRowIcon(textField.text)
-        }
         toolsTable.selectionModel.addListSelectionListener { e ->
             if (e.valueIsAdjusting) return@addListSelectionListener
             val row = toolsTable.selectedRow
@@ -250,14 +253,15 @@ class AgentExtenderConfigurable : Configurable {
         }
         syncEnabled()
         textField.columns = 30
-        // Label on the left, the path textbox fills the middle, and Browse sits on the right.
-        val right = JPanel(com.intellij.ui.components.panels.HorizontalLayout(6)).apply {
+        // Cap the field at its column-based width. FormBuilder stretches components across the (table-widened)
+        // form; in the old BorderLayout that stretched the CENTER field and pushed Browse off the right edge,
+        // producing a page-level horizontal scrollbar. The cap keeps Browse right next to the field.
+        textField.maximumSize = Dimension(textField.preferredSize.width, textField.preferredSize.height)
+        // Label, path field and Browse sit left-aligned next to each other; nothing fills the whole row.
+        val p = JPanel(com.intellij.ui.components.panels.HorizontalLayout(6)).apply {
+            add(JLabel(message("icon.label")))
+            add(textField)
             add(browse)
-        }
-        val p = JPanel(BorderLayout(6, 0)).apply {
-            add(JLabel(message("icon.label")), BorderLayout.WEST)
-            add(textField, BorderLayout.CENTER)
-            add(right, BorderLayout.EAST)
         }
         return p
     }
