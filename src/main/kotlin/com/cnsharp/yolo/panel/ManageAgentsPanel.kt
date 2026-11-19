@@ -9,6 +9,7 @@ import com.cnsharp.yolo.settings.AgentRegistry
 import com.cnsharp.yolo.settings.AgentUpdateChecker
 import com.cnsharp.yolo.settings.InstalledAgents
 import com.cnsharp.yolo.settings.InstallSpec
+import com.cnsharp.yolo.settings.TERMINAL_STATUSES
 import com.cnsharp.yolo.terminal.AgentIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
@@ -123,13 +124,18 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         val status: AgentUpdateChecker.Status,
         val current: String,
         val latest: String,
-        val url: String
+        val url: String,
+        /** Terminal lifecycle state (`closed`). */
+        val terminal: Boolean,
+        /** Localized status flag, shown when a terminal agent is installed locally. */
+        val statusFlag: String?
     )
 
     private fun cardFor(def: AgentDef): Card {
         val cmd = def.command
         val installed = cmd.isNotBlank() && cmd.lowercase() in InstalledAgents.installed()
         val info = AgentUpdateChecker.infoFor(cmd)
+        val terminal = def.status in TERMINAL_STATUSES
         return Card(
             id = def.id,
             displayName = def.displayName,
@@ -139,7 +145,9 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
             status = info?.status ?: AgentUpdateChecker.Status.NA,
             current = info?.current ?: "",
             latest = info?.latest ?: "",
-            url = def.url
+            url = def.url,
+            terminal = terminal,
+            statusFlag = if (terminal && installed) message("manage.statusClosed") else null
         )
     }
 
@@ -173,6 +181,9 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
         // AgentExtenderSettings and declare no install/version spec, so exclude any agent
         // without one (also keeps this page correct if its source list is ever merged).
         val cards = AgentRegistry.agents.filter { it.install != null }.map { cardFor(it) }
+            // Terminal agents that are not installed locally are hidden from Manage
+            // Agents (stage A already removes them; this also covers a stale cache).
+            .filterNot { it.terminal && !it.installed }
             .sortedBy { if (it.installed) 0 else 1 }
         grid.removeAll()
         if (cards.isEmpty()) {
@@ -208,18 +219,25 @@ class ManageAgentsPanel(private val project: Project) : JBPanel<ManageAgentsPane
             maximumSize = JBUI.size(300, 200)
         }
 
-        // head: icon + name (+ "update available" badge)
+        // head: icon + name (+ "update available" badge + EOL status flag)
         val head = JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
             val icon = JBLabel(AgentIcons.forAgent(c.id, ""))
             val name = JBLabel(c.displayName).apply { font = font.deriveFont(font.size2D + 1f) }
             add(icon, BorderLayout.WEST)
             add(name, BorderLayout.CENTER)
-        }
-        if (c.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE) {
-            head.add(JBLabel(message("manage.updateAvailable")).apply {
-                // Same accent blue as the primary Update button (VSCode-like), readable on both themes.
-                foreground = JBColor(0x2D7BD4, 0x4A9BFF)
-            }, BorderLayout.EAST)
+            val badges = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), 0)).apply {
+                isOpaque = false
+            }
+            if (c.status == AgentUpdateChecker.Status.UPDATE_AVAILABLE) {
+                badges.add(JBLabel(message("manage.updateAvailable")).apply {
+                    // Same accent blue as the primary Update button (VSCode-like), readable on both themes.
+                    foreground = JBColor(0x2D7BD4, 0x4A9BFF)
+                })
+            }
+            c.statusFlag?.let {
+                badges.add(JBLabel(it).apply { foreground = JBColor(0xA86100, 0xD9A441) })
+            }
+            if (badges.componentCount > 0) add(badges, BorderLayout.EAST)
         }
 
         // version rows

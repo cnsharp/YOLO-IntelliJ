@@ -67,6 +67,18 @@ data class InstallSpec(
     val hasLatestSource: Boolean get() = latest?.hasSource == true
 }
 
+/** The single terminal vendor-lifecycle state (manually assigned only):
+ *  the product/service is discontinued (offline). Shared by the stage-A merge
+ *  filter and the Manage Agents status flag. */
+val TERMINAL_STATUSES: Set<String> = setOf("closed")
+
+/** Whether this registry's install path works on each OS (v2, Meta/AGENTS.md §4). */
+data class PlatformSupport(
+    val darwin: String? = null,
+    val win32: String? = null,
+    val linux: String? = null
+)
+
 data class AgentDef(
     val id: String,
     val displayName: String,
@@ -79,9 +91,12 @@ data class AgentDef(
      *  Distinct from [InstallSpec.url], which is the install/download page (blank for npm/pip/brew agents). */
     val url: String = "",
     val install: InstallSpec? = null,
-    /** Vendor-lifecycle status from the remote v2 catalog (active/maintaining/stale/closed/unknown).
-     *  Bundled v1 entries have no status and are treated as "active". */
-    val status: String = "active"
+    /** Vendor-lifecycle status from the remote v2 catalog. Bundled v1 entries have no status (= active). */
+    val status: String = "active",
+    /** Whether this registry's install path works on each OS (v2). */
+    val platformSupport: PlatformSupport? = null,
+    /** UTC+0 (…Z) timestamp of the agent's most recent upstream release (v2). */
+    val lastReleaseAt: String = ""
 )
 
 object AgentRegistry {
@@ -103,10 +118,33 @@ object AgentRegistry {
 
     val agents: List<AgentDef> get() = currentAgents
 
+    /** OS key matching the platformSupport keys (Meta/AGENTS.md §4). */
+    private fun currentOsKey(): String {
+        val os = (System.getProperty("os.name") ?: "").lowercase()
+        return when {
+            os.contains("win") -> "win32"
+            os.contains("mac") || os.contains("darwin") -> "darwin"
+            else -> "linux"
+        }
+    }
+
+    /** Keep everything except an explicit `unsupported` for this OS. A missing
+     *  `platformSupport` (legacy v1 entries / user-defined overrides) and
+     *  `viaWsl` (win32 through WSL) are kept. `osKey` is injectable for tests. */
+    fun isSupportedOnThisOs(def: AgentDef, osKey: String = currentOsKey()): Boolean {
+        val s = def.platformSupport ?: return true
+        val v = when (osKey) {
+            "win32" -> s.win32
+            "darwin" -> s.darwin
+            else -> s.linux
+        }
+        return v != "unsupported"
+    }
+
     /** Replace the live catalog and rebuild the lookup maps atomically. */
     fun replaceAll(list: List<AgentDef>) {
-        if (list.isEmpty()) return
-        val safe = list.toList()
+        val safe = list.filter { isSupportedOnThisOs(it) }
+        if (safe.isEmpty()) return
         byIdMap = safe.associateBy { it.id.lowercase() }
         byCommandMap = safe.associateBy { it.command.lowercase() }
         currentAgents = safe
@@ -150,6 +188,7 @@ object AgentRegistry {
                 return emptyList()
             }
             stream.bufferedReader().use { reader -> parseCatalog(reader.readText()) }
+                .filter { isSupportedOnThisOs(it) }
         } catch (e: Exception) {
             LOG.error("AgentRegistry: failed to load agents.json", e)
             emptyList()
@@ -185,7 +224,9 @@ object AgentRegistry {
         val icon: String = "",
         val url: String = "",
         val install: InstallSpec? = null,
-        val status: String = "active"
+        val status: String = "active",
+        val platformSupport: PlatformSupport? = null,
+        val lastReleaseAt: String = ""
     ) {
         fun toAgentDef() = AgentDef(
             id = id,
@@ -197,7 +238,9 @@ object AgentRegistry {
             icon = icon,
             url = url,
             install = install,
-            status = if (status.isBlank()) "active" else status
+            status = if (status.isBlank()) "active" else status,
+            platformSupport = platformSupport,
+            lastReleaseAt = lastReleaseAt
         )
     }
 

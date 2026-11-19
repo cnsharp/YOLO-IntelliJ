@@ -36,7 +36,9 @@ object AgentCatalogUpdater {
     private const val TIMEOUT_MS = 20_000
     private const val MAX_BODY_BYTES = 2 * 1024 * 1024
 
-    private val OUTDATED = setOf("stale", "maintaining", "closed")
+    /** `closed` is the single terminal state. stale and maintaining describe
+     *  development pace, not end-of-life — see Meta/meta/CATALOG_MERGE.md. */
+    private val OUTDATED = TERMINAL_STATUSES
     private val KNOWN_STATUS = setOf("active", "maintaining", "stale", "closed", "unknown")
     private val ID_RE = Pattern.compile("[a-z][a-z0-9-]*")
     private val ICON_RE = Pattern.compile("[A-Za-z0-9._-]+\\.(svg|png)")
@@ -211,6 +213,7 @@ object AgentCatalogUpdater {
             id = id, displayName = displayName, command = command,
             skipFlag = skipFlag, resumeFlag = resumeFlag,
             skipEnv = skipEnv?.let { AgentRegistry.SkipEnvJson(it.first, it.second) },
-            icon = icon, url = url, install = install, status = status
+            icon = icon, url = url, install = install, status = status,
+            platformSupport = platformSupport, lastReleaseAt = lastReleaseAt
         )
 }

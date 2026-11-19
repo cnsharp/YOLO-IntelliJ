@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-11-07",
+  "updatedAt": "2026-11-19",
   "agents": [
     {
       "id": "claude",
@@ -30,7 +30,8 @@
         "latest": {
           "npm": "@anthropic-ai/claude-code"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-18T23:09:39Z"
     },
     {
       "id": "codex",
@@ -60,7 +61,8 @@
         "latest": {
           "npm": "@openai/codex"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-18T03:45:45Z"
     },
     {
       "id": "cursor",
@@ -93,7 +95,8 @@
             "pattern": "(\\d{4}\\.\\d{2}\\.\\d{2})"
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "copilot",
@@ -123,7 +126,8 @@
         "latest": {
           "npm": "@github/copilot"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-18T06:00:58Z"
     },
     {
       "id": "opencode",
@@ -154,7 +158,8 @@
           "npm": "opencode-ai",
           "github": "anomalyco/opencode"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-17T07:22:20Z"
     },
     {
       "id": "aider",
@@ -179,7 +184,8 @@
         "type": "pip",
         "pkg": "aider-chat",
         "updateCmd": "aider --upgrade"
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "cline",
@@ -204,7 +210,8 @@
         "type": "npm",
         "pkg": "cline",
         "updateCmd": "cline update"
-      }
+      },
+      "lastReleaseAt": "2026-10-26T04:04:22Z"
     },
     {
       "id": "continue",
@@ -233,7 +240,8 @@
         "latest": {
           "npm": "@continuedev/cli"
         }
-      }
+      },
+      "lastReleaseAt": "2026-06-18T21:40:36Z"
     },
     {
       "id": "openclaw",
@@ -263,7 +271,8 @@
         "latest": {
           "npm": "openclaw"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-17T09:59:33Z"
     },
     {
       "id": "kiro",
@@ -296,7 +305,8 @@
             "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "goose",
@@ -325,7 +335,8 @@
         "type": "brew",
         "pkg": "block-goose-cli",
         "updateCmd": "goose update"
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "crush",
@@ -349,7 +360,8 @@
       "install": {
         "type": "npm",
         "pkg": "@charmland/crush"
-      }
+      },
+      "lastReleaseAt": "2026-11-12T16:04:41Z"
     },
     {
       "id": "amp",
@@ -382,7 +394,8 @@
             "pattern": "(\\d+\\.\\d+\\.\\d+)"
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "kimi",
@@ -407,7 +420,8 @@
         "type": "npm",
         "pkg": "@moonshot-ai/kimi-code",
         "updateCmd": "kimi upgrade -y"
-      }
+      },
+      "lastReleaseAt": "2026-11-19T11:24:38Z"
     },
     {
       "id": "qwen-code",
@@ -432,7 +446,8 @@
         "type": "npm",
         "pkg": "@qwen-code/qwen-code",
         "updateCmd": "qwen update"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T12:10:30Z"
     },
     {
       "id": "trae",
@@ -464,7 +479,8 @@
             "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "codebuddy",
@@ -489,7 +505,8 @@
         "type": "npm",
         "pkg": "@tencent-ai/codebuddy-code",
         "updateCmd": "codebuddy update"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T09:58:42Z"
     },
     {
       "id": "qoder",
@@ -514,7 +531,8 @@
         "type": "npm",
         "pkg": "@qoder-ai/qodercli",
         "updateCmd": "qoder update"
-      }
+      },
+      "lastReleaseAt": "2026-11-19T13:39:55Z"
     },
     {
       "id": "qodercn",
@@ -539,7 +557,8 @@
         "type": "npm",
         "pkg": "@qodercn-ai/qoderclicn",
         "updateCmd": "qodercn update"
-      }
+      },
+      "lastReleaseAt": "2026-11-19T13:39:03Z"
     },
     {
       "id": "devin",
@@ -572,7 +591,8 @@
             "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "grok",
@@ -597,7 +617,8 @@
         "type": "npm",
         "pkg": "@xai-official/grok",
         "updateCmd": "grok update"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T17:44:51Z"
     },
     {
       "id": "antigravity",
@@ -630,7 +651,8 @@
             "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "mistral-vibe",
@@ -655,7 +677,8 @@
         "type": "pip",
         "pkg": "mistral-vibe",
         "updateCmd": "vibe update"
-      }
+      },
+      "lastReleaseAt": "2026-11-18T08:22:38Z"
     },
     {
       "id": "kilo",
@@ -680,7 +703,8 @@
         "type": "npm",
         "pkg": "@kilocode/cli",
         "updateCmd": "kilo upgrade"
-      }
+      },
+      "lastReleaseAt": "2026-11-05T12:45:18Z"
     },
     {
       "id": "hermes",
@@ -710,7 +734,8 @@
         "latest": {
           "github": "NousResearch/hermes-agent"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-19T15:16:22Z"
     },
     {
       "id": "pi",
@@ -735,7 +760,8 @@
         "type": "npm",
         "pkg": "@earendil-works/pi-coding-agent",
         "updateCmd": "pi update --self"
-      }
+      },
+      "lastReleaseAt": "2026-11-10T12:24:55Z"
     },
     {
       "id": "droid",
@@ -768,7 +794,8 @@
             "pattern": "VER=\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "aug",
@@ -793,7 +820,8 @@
         "type": "npm",
         "pkg": "@augmentcode/auggie",
         "updateCmd": "auggie upgrade --skip-confirmation"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T04:46:01Z"
     },
     {
       "id": "prime-agent",
@@ -826,7 +854,8 @@
             "pattern": "(\\d+\\.\\d+\\.\\d+)"
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "autohand",
@@ -851,7 +880,8 @@
         "type": "npm",
         "pkg": "autohand-cli",
         "updateCmd": "autohand update"
-      }
+      },
+      "lastReleaseAt": "2026-11-12T11:43:05Z"
     },
     {
       "id": "command-code",
@@ -876,7 +906,8 @@
         "type": "npm",
         "pkg": "command-code",
         "updateCmd": "command-code update"
-      }
+      },
+      "lastReleaseAt": "2026-11-18T20:14:14Z"
     },
     {
       "id": "ante",
@@ -908,7 +939,8 @@
             "pattern": "\"version\"\\s*:\\s*\"v?([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "codebuff",
@@ -932,7 +964,8 @@
       "install": {
         "type": "npm",
         "pkg": "codebuff"
-      }
+      },
+      "lastReleaseAt": "2026-09-08T03:41:20Z"
     },
     {
       "id": "omp",
@@ -962,7 +995,8 @@
         "latest": {
           "npm": "@oh-my-pi/pi-coding-agent"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-19T00:18:42Z"
     },
     {
       "id": "agoragentic",
@@ -986,7 +1020,8 @@
       "install": {
         "type": "npm",
         "pkg": "agoragentic-mcp"
-      }
+      },
+      "lastReleaseAt": "2026-07-23T18:23:23Z"
     },
     {
       "id": "cortex-code",
@@ -1019,7 +1054,8 @@
             "pattern": "(\\d+\\.\\d+\\.\\d+)"
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "corust-agent",
@@ -1046,7 +1082,8 @@
         "latest": {
           "github": "Corust-ai/homebrew-cli"
         }
-      }
+      },
+      "lastReleaseAt": "2026-05-13T09:08:40Z"
     },
     {
       "id": "crow-cli",
@@ -1075,7 +1112,8 @@
         "latest": {
           "pypi": "crow-cli"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-11T06:10:25Z"
     },
     {
       "id": "deepagents",
@@ -1099,7 +1137,8 @@
       "install": {
         "type": "npm",
         "pkg": "deepagents-acp"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T00:30:43Z"
     },
     {
       "id": "dirac",
@@ -1124,7 +1163,8 @@
         "type": "npm",
         "pkg": "dirac-cli",
         "updateCmd": "dirac update"
-      }
+      },
+      "lastReleaseAt": "2026-11-17T18:12:58Z"
     },
     {
       "id": "dimcode",
@@ -1149,7 +1189,8 @@
         "type": "npm",
         "pkg": "dimcode",
         "updateCmd": "dim upgrade"
-      }
+      },
+      "lastReleaseAt": "2026-11-16T12:09:12Z"
     },
     {
       "id": "fast-agent",
@@ -1173,7 +1214,8 @@
       "install": {
         "type": "pip",
         "pkg": "fast-agent-mcp"
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "glm-agent",
@@ -1197,7 +1239,8 @@
       "install": {
         "type": "npm",
         "pkg": "glm-acp-agent"
-      }
+      },
+      "lastReleaseAt": "2026-11-09T19:24:00Z"
     },
     {
       "id": "harn",
@@ -1227,7 +1270,8 @@
         "latest": {
           "github": "burin-labs/harn"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-18T03:05:51Z"
     },
     {
       "id": "junie",
@@ -1260,7 +1304,8 @@
             "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "minion-code",
@@ -1284,7 +1329,8 @@
       "install": {
         "type": "pip",
         "pkg": "minion-code"
-      }
+      },
+      "lastReleaseAt": "2026-10-05T05:31:03Z"
     },
     {
       "id": "nova",
@@ -1309,7 +1355,8 @@
         "type": "npm",
         "pkg": "@compass-ai/nova",
         "updateCmd": "nova update"
-      }
+      },
+      "lastReleaseAt": "2026-11-16T01:48:22Z"
     },
     {
       "id": "poolside",
@@ -1342,7 +1389,8 @@
             "pattern": "(\\d+\\.\\d+\\.\\d+)"
           }
         }
-      }
+      },
+      "lastReleaseAt": ""
     },
     {
       "id": "sigit",
@@ -1366,7 +1414,8 @@
       "install": {
         "type": "npm",
         "pkg": "@getsigit/sigit"
-      }
+      },
+      "lastReleaseAt": "2026-11-07T10:44:20Z"
     },
     {
       "id": "stakpak",
@@ -1396,7 +1445,8 @@
         "latest": {
           "github": "stakpak/agent"
         }
-      }
+      },
+      "lastReleaseAt": "2026-07-06T10:10:46Z"
     },
     {
       "id": "vtcode",
@@ -1425,7 +1475,8 @@
         "latest": {
           "github": "vinhnx/vtcode"
         }
-      }
+      },
+      "lastReleaseAt": "2026-11-19T13:35:03Z"
     }
   ]
 }
