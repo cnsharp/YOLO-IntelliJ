@@ -8,7 +8,7 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.diagnostic.Logger
@@ -230,13 +230,14 @@ class AgentExtenderConfigurable : Configurable {
             browse.isEnabled = enabled
         }
         browse.addActionListener {
-            // `singleFile()` is the non-deprecated single-file factory (the `createSingleFileDescriptor()`
-            // overloads are deprecated since 2025.x). Note `createSingleFileDescriptor(String)` takes an
-            // extension, NOT a title — passing "Select icon file" there filters every icon out. Set the title
-            // with withTitle() and let withFileFilter do the svg/png filtering.
-            val descriptor = FileChooserDescriptorFactory.singleFile()
-                .withTitle("Select icon file")
-                .withFileFilter { it.extension == "svg" || it.extension == "png" }
+            // Use the long-stable FileChooserDescriptor constructor (chooseFiles=true, single selection) plus
+            // withFileFilter — both verified present on the minimum supported IDE (2023.3). The newer
+            // FileChooserDescriptorFactory.singleFile() helper only exists from 2025.x and would throw
+            // NoSuchMethodError on older IDEs. Note the String overload of createSingleFileDescriptor is an
+            // extension, NOT a title — passing a title there filters everything out.
+            val descriptor = FileChooserDescriptor(
+                true, false, false, false, false, false
+            ).withFileFilter { it.extension == "svg" || it.extension == "png" }
             val initial = textField.text?.takeIf { it.isNotBlank() && !it.startsWith("http", true) }?.let {
                 LocalFileSystem.getInstance().findFileByPath(it)
             }
