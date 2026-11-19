@@ -92,14 +92,9 @@ object AgentUpdateChecker {
             checking = true
         }
         seedFromCache()
-        // Until the first background PATH scan fills the installed cache, fall back to the agents
-        // already recorded in customTools so a fresh session still has targets to check.
-        val installed = InstalledAgents.installed().ifEmpty {
-            AgentExtenderSettings.getInstance().state.customTools
-                .map { it.command.lowercase().trim() }
-                .filter { it.isNotBlank() }
-                .toSet()
-        }
+        // Startup sync (syncInstalledAgents) fully reconciles installedCommands before this checker
+        // has work to do; the cache is the single source of truth for which agents are installed.
+        val installed = InstalledAgents.installed()
         val specs = AgentRegistry.agents.mapNotNull { def ->
             val spec = def.install ?: return@mapNotNull null
             if (!spec.automatable && !spec.hasLatestSource) return@mapNotNull null

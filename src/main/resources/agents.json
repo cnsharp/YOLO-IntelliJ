@@ -1,879 +1,1431 @@
-[
-  {
-    "id": "claude",
-    "baseArgs": "",
-    "displayName": "Claude Code",
-    "command": "claude",
-    "skipFlag": "--dangerously-skip-permissions",
-    "resumeFlag": "-r",
-    "icon": "claude.svg",
-    "url": "https://claude.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://claude.ai/install.sh | bash",
-      "cmdWin": "irm https://claude.ai/install.ps1 | iex",
-      "updateCmd": "claude update",
-      "latest": {
-        "npm": "@anthropic-ai/claude-code"
-      }
-    }
-  },
-  {
-    "id": "codex",
-    "baseArgs": "",
-    "displayName": "Codex",
-    "command": "codex",
-    "skipFlag": "--yolo",
-    "resumeFlag": "resume --last",
-    "icon": "codex.svg",
-    "url": "https://openai.com/codex",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
-      "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
-      "updateCmd": "codex update",
-      "latest": {
-        "npm": "@openai/codex"
-      }
-    }
-  },
-  {
-    "id": "cursor",
-    "baseArgs": "",
-    "displayName": "Cursor",
-    "command": "agent",
-    "skipFlag": "--force",
-    "resumeFlag": "--resume",
-    "icon": "cursor.svg",
-    "url": "https://cursor.com/cli",
-    "install": {
-      "type": "shell",
-      "cmd": "curl https://cursor.com/install -fsS | bash",
-      "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex",
-      "updateCmd": "agent update",
-      "latest": {
-        "web": {
-          "url": "https://cursor.com/install",
-          "pattern": "(\\d{4}\\.\\d{2}\\.\\d{2})"
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-11-07",
+  "agents": [
+    {
+      "id": "claude",
+      "baseArgs": "",
+      "displayName": "Claude Code",
+      "command": "claude",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "-r",
+      "icon": "claude.svg",
+      "url": "https://claude.ai/",
+      "status": "active",
+      "latestVersion": "2.1.319",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/claude; rm -rf ~/.claude/downloads",
+        "cmdWin": "Remove-Item -Force \"$env:USERPROFILE\\.local\\bin\\claude*\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"$env:USERPROFILE\\.claude\\downloads\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://claude.ai/install.sh | bash",
+        "cmdWin": "irm https://claude.ai/install.ps1 | iex",
+        "updateCmd": "claude update",
+        "latest": {
+          "npm": "@anthropic-ai/claude-code"
         }
       }
-    }
-  },
-  {
-    "id": "copilot",
-    "baseArgs": "",
-    "displayName": "GitHub Copilot",
-    "command": "copilot",
-    "skipFlag": "--allow-all",
-    "resumeFlag": "-r",
-    "icon": "copilot.svg",
-    "url": "https://github.com/features/copilot",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://gh.io/copilot-install | bash",
-      "cmdWin": "winget install GitHub.Copilot",
-      "updateCmd": "copilot update",
-      "latest": {
-        "npm": "@github/copilot"
-      }
-    }
-  },
-  {
-    "id": "opencode",
-    "baseArgs": "",
-    "displayName": "OpenCode",
-    "command": "opencode",
-    "skipFlag": "--auto",
-    "resumeFlag": "",
-    "icon": "opencode.png",
-    "url": "https://opencode.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://opencode.ai/install | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\"",
-      "updateCmd": "opencode upgrade",
-      "latest": {
-        "npm": "opencode-ai",
-        "github": "anomalyco/opencode"
-      }
-    }
-  },
-  {
-    "id": "aider",
-    "baseArgs": "",
-    "displayName": "Aider",
-    "command": "aider",
-    "skipFlag": "--yes",
-    "resumeFlag": "",
-    "icon": "aider.svg",
-    "url": "https://aider.chat/",
-    "install": {
-      "type": "pip",
-      "pkg": "aider-chat",
-      "updateCmd": "aider --upgrade"
-    }
-  },
-  {
-    "id": "cline",
-    "baseArgs": "",
-    "displayName": "Cline",
-    "command": "cline",
-    "skipFlag": "--auto-approve true",
-    "resumeFlag": "--taskId",
-    "icon": "cline.svg",
-    "url": "https://cline.bot/",
-    "install": {
-      "type": "npm",
-      "pkg": "cline",
-      "updateCmd": "cline update"
-    }
-  },
-  {
-    "id": "continue",
-    "baseArgs": "",
-    "displayName": "Continue",
-    "command": "cn",
-    "skipFlag": "--auto",
-    "resumeFlag": "",
-    "icon": "continue.svg",
-    "url": "https://continue.dev/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.sh | bash",
-      "cmdWin": "irm https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.ps1 | iex",
-      "latest": {
-        "npm": "@continuedev/cli"
-      }
-    }
-  },
-  {
-    "id": "openclaw",
-    "baseArgs": "",
-    "displayName": "OpenClaw",
-    "command": "openclaw",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "openclaw.svg",
-    "url": "https://openclaw.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://openclaw.ai/install.sh | bash",
-      "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex",
-      "updateCmd": "openclaw update",
-      "latest": {
-        "npm": "openclaw"
-      }
-    }
-  },
-  {
-    "id": "kiro",
-    "baseArgs": "",
-    "displayName": "Kiro",
-    "command": "kiro-cli",
-    "skipFlag": "--trust-all-tools",
-    "resumeFlag": "",
-    "icon": "kiro.svg",
-    "url": "https://kiro.dev/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
-      "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex",
-      "updateCmd": "kiro-cli update --non-interactive",
-      "latest": {
-        "web": {
-          "url": "https://prod.download.cli.kiro.dev/stable/latest/manifest.json",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "goose",
-    "baseArgs": "",
-    "displayName": "Goose",
-    "command": "goose",
-    "skipFlag": "",
-    "resumeFlag": "-r",
-    "skipEnv": {
-      "name": "GOOSE_MODE",
-      "value": "auto"
     },
-    "icon": "goose.svg",
-    "url": "https://block.github.io/goose/",
-    "install": {
-      "type": "brew",
-      "pkg": "block-goose-cli",
-      "updateCmd": "goose update"
-    }
-  },
-  {
-    "id": "crush",
-    "baseArgs": "",
-    "displayName": "Charm Crush",
-    "command": "crush",
-    "skipFlag": "--yolo",
-    "resumeFlag": "",
-    "icon": "crush.png",
-    "url": "https://charm.sh/crush",
-    "install": {
-      "type": "npm",
-      "pkg": "@charmland/crush"
-    }
-  },
-  {
-    "id": "amp",
-    "baseArgs": "",
-    "displayName": "Amp",
-    "command": "amp",
-    "skipFlag": "--dangerously-allow-all",
-    "resumeFlag": "",
-    "icon": "amp.svg",
-    "url": "https://ampcode.com/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://ampcode.com/install.sh | bash",
-      "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\"",
-      "updateCmd": "amp update",
-      "latest": {
-        "web": {
-          "url": "https://static.ampcode.com/cli/cli-version.txt",
-          "pattern": "(\\d+\\.\\d+\\.\\d+)"
+    {
+      "id": "codex",
+      "baseArgs": "",
+      "displayName": "Codex",
+      "command": "codex",
+      "skipFlag": "--yolo",
+      "resumeFlag": "resume --last",
+      "icon": "codex.svg",
+      "url": "https://openai.com/codex",
+      "status": "active",
+      "latestVersion": "0.167.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/codex ~/.local/bin/codex-code-mode-host; rm -rf ~/.local/share/codex",
+        "cmdWin": "Remove-Item -Force \"$env:USERPROFILE\\.local\\bin\\codex*\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\codex\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
+        "cmdWin": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
+        "updateCmd": "codex update",
+        "latest": {
+          "npm": "@openai/codex"
+        }
+      }
+    },
+    {
+      "id": "cursor",
+      "baseArgs": "",
+      "displayName": "Cursor",
+      "command": "agent",
+      "skipFlag": "--force",
+      "resumeFlag": "--resume",
+      "icon": "cursor.svg",
+      "url": "https://cursor.com/cli",
+      "status": "unknown",
+      "latestVersion": "2026.11.05",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/agent ~/.local/bin/cursor-agent; rm -rf ~/.local/share/cursor-agent",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\cursor-agent\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl https://cursor.com/install -fsS | bash",
+        "cmdWin": "irm 'https://cursor.com/install?win32=true' | iex",
+        "updateCmd": "agent update",
+        "latest": {
+          "web": {
+            "url": "https://cursor.com/install",
+            "pattern": "(\\d{4}\\.\\d{2}\\.\\d{2})"
+          }
+        }
+      }
+    },
+    {
+      "id": "copilot",
+      "baseArgs": "",
+      "displayName": "GitHub Copilot",
+      "command": "copilot",
+      "skipFlag": "--allow-all",
+      "resumeFlag": "-r",
+      "icon": "copilot.svg",
+      "url": "https://github.com/features/copilot",
+      "status": "active",
+      "latestVersion": "1.0.107",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/copilot",
+        "cmdWin": "winget uninstall GitHub.Copilot"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://gh.io/copilot-install | bash",
+        "cmdWin": "winget install GitHub.Copilot",
+        "updateCmd": "copilot update",
+        "latest": {
+          "npm": "@github/copilot"
+        }
+      }
+    },
+    {
+      "id": "opencode",
+      "baseArgs": "",
+      "displayName": "OpenCode",
+      "command": "opencode",
+      "skipFlag": "--auto",
+      "resumeFlag": "",
+      "icon": "opencode.png",
+      "url": "https://opencode.ai/",
+      "status": "active",
+      "latestVersion": "1.19.5",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "viaWsl",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf ~/.opencode",
+        "cmdWin": "wsl -e bash -c \"rm -rf ~/.opencode\""
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://opencode.ai/install | bash",
+        "cmdWin": "wsl -e bash -c \"curl -fsSL https://opencode.ai/install | bash\"",
+        "updateCmd": "opencode upgrade",
+        "latest": {
+          "npm": "opencode-ai",
+          "github": "anomalyco/opencode"
+        }
+      }
+    },
+    {
+      "id": "aider",
+      "baseArgs": "",
+      "displayName": "Aider",
+      "command": "aider",
+      "skipFlag": "--yes",
+      "resumeFlag": "",
+      "icon": "aider.svg",
+      "url": "https://aider.chat/",
+      "status": "stale",
+      "latestVersion": "0.86.2",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "pip uninstall -y aider-chat"
+      },
+      "install": {
+        "type": "pip",
+        "pkg": "aider-chat",
+        "updateCmd": "aider --upgrade"
+      }
+    },
+    {
+      "id": "cline",
+      "baseArgs": "",
+      "displayName": "Cline",
+      "command": "cline",
+      "skipFlag": "--auto-approve true",
+      "resumeFlag": "--taskId",
+      "icon": "cline.svg",
+      "url": "https://cline.bot/",
+      "status": "active",
+      "latestVersion": "3.0.74",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g cline"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "cline",
+        "updateCmd": "cline update"
+      }
+    },
+    {
+      "id": "continue",
+      "baseArgs": "",
+      "displayName": "Continue",
+      "command": "cn",
+      "skipFlag": "--auto",
+      "resumeFlag": "",
+      "icon": "continue.svg",
+      "url": "https://continue.dev/",
+      "status": "maintaining",
+      "latestVersion": "1.5.47",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @continuedev/cli; rm -rf ~/.local/share/fnm",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\fnm\",\"$env:USERPROFILE\\.npm-global\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.sh | bash",
+        "cmdWin": "irm https://raw.githubusercontent.com/continuedev/continue/main/extensions/cli/scripts/install.ps1 | iex",
+        "latest": {
+          "npm": "@continuedev/cli"
+        }
+      }
+    },
+    {
+      "id": "openclaw",
+      "baseArgs": "",
+      "displayName": "OpenClaw",
+      "command": "openclaw",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "openclaw.svg",
+      "url": "https://openclaw.ai/",
+      "status": "active",
+      "latestVersion": "2026.11.1",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/openclaw; rm -rf ~/.local/state/openclaw",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:USERPROFILE\\openclaw\",\"$env:LOCALAPPDATA\\openclaw\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://openclaw.ai/install.sh | bash",
+        "cmdWin": "iwr -useb https://openclaw.ai/install.ps1 | iex",
+        "updateCmd": "openclaw update",
+        "latest": {
+          "npm": "openclaw"
+        }
+      }
+    },
+    {
+      "id": "kiro",
+      "baseArgs": "",
+      "displayName": "Kiro",
+      "command": "kiro-cli",
+      "skipFlag": "--trust-all-tools",
+      "resumeFlag": "",
+      "icon": "kiro.svg",
+      "url": "https://kiro.dev/",
+      "status": "unknown",
+      "latestVersion": "3.0.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf '/Applications/Kiro CLI.app'; rm -f ~/.local/bin/kiro-cli",
+        "cmdWin": "Get-Package -Name \"*Kiro*\" -ErrorAction SilentlyContinue | Uninstall-Package"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://cli.kiro.dev/install | bash",
+        "cmdWin": "irm 'https://cli.kiro.dev/install.ps1' | iex",
+        "updateCmd": "kiro-cli update --non-interactive",
+        "latest": {
+          "web": {
+            "url": "https://prod.download.cli.kiro.dev/stable/latest/manifest.json",
+            "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "goose",
+      "baseArgs": "",
+      "displayName": "Goose",
+      "command": "goose",
+      "skipFlag": "",
+      "resumeFlag": "-r",
+      "skipEnv": {
+        "name": "GOOSE_MODE",
+        "value": "auto"
+      },
+      "icon": "goose.svg",
+      "url": "https://block.github.io/goose/",
+      "status": "unknown",
+      "latestVersion": "1.57.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "unsupported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "brew uninstall block-goose-cli"
+      },
+      "install": {
+        "type": "brew",
+        "pkg": "block-goose-cli",
+        "updateCmd": "goose update"
+      }
+    },
+    {
+      "id": "crush",
+      "baseArgs": "",
+      "displayName": "Charm Crush",
+      "command": "crush",
+      "skipFlag": "--yolo",
+      "resumeFlag": "",
+      "icon": "crush.png",
+      "url": "https://charm.sh/crush",
+      "status": "active",
+      "latestVersion": "0.100.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @charmland/crush"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@charmland/crush"
+      }
+    },
+    {
+      "id": "amp",
+      "baseArgs": "",
+      "displayName": "Amp",
+      "command": "amp",
+      "skipFlag": "--dangerously-allow-all",
+      "resumeFlag": "",
+      "icon": "amp.svg",
+      "url": "https://ampcode.com/",
+      "status": "active",
+      "latestVersion": "0.12.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf ~/.amp",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:USERPROFILE\\.amp\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://ampcode.com/install.sh | bash",
+        "cmdWin": "powershell -c \"irm https://ampcode.com/install.ps1 | iex\"",
+        "updateCmd": "amp update",
+        "latest": {
+          "web": {
+            "url": "https://static.ampcode.com/cli/cli-version.txt",
+            "pattern": "(\\d+\\.\\d+\\.\\d+)"
+          }
+        }
+      }
+    },
+    {
+      "id": "kimi",
+      "baseArgs": "",
+      "displayName": "Kimi",
+      "command": "kimi",
+      "skipFlag": "--yolo",
+      "resumeFlag": "-r",
+      "icon": "kimi.png",
+      "url": "https://kimi.moonshot.cn/",
+      "status": "active",
+      "latestVersion": "2.5.2",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @moonshot-ai/kimi-code"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@moonshot-ai/kimi-code",
+        "updateCmd": "kimi upgrade -y"
+      }
+    },
+    {
+      "id": "qwen-code",
+      "baseArgs": "",
+      "displayName": "Qwen Code",
+      "command": "qwen",
+      "skipFlag": "--approval-mode yolo",
+      "resumeFlag": "",
+      "icon": "qwen-code.png",
+      "url": "https://qwen.ai/qwencode",
+      "status": "active",
+      "latestVersion": "0.26.9",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @qwen-code/qwen-code"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@qwen-code/qwen-code",
+        "updateCmd": "qwen update"
+      }
+    },
+    {
+      "id": "trae",
+      "baseArgs": "",
+      "displayName": "TraeCode",
+      "command": "traecli",
+      "skipFlag": "",
+      "resumeFlag": "--resume",
+      "icon": "trae.svg",
+      "url": "https://www.trae.ai/",
+      "status": "unknown",
+      "latestVersion": "",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/trae; rm -rf ~/.local/share/trae ~/.local/share/traex ~/.local/share/traecli",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:USERPROFILE\\.trae\",\"$env:LOCALAPPDATA\\trae\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "sh -c \"$(curl -fsSL https://trae.cn/trae-cli/install_v2.sh)\"",
+        "cmdWin": "irm https://trae.cn/trae-cli/install_v2.ps1 | iex",
+        "latest": {
+          "web": {
+            "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/trae-cli/v2/public/stable/latest.json",
+            "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "codebuddy",
+      "baseArgs": "",
+      "displayName": "CodeBuddy",
+      "command": "codebuddy",
+      "skipFlag": "-y",
+      "resumeFlag": "-r",
+      "icon": "codebuddy.svg",
+      "url": "https://www.codebuddy.ai/",
+      "status": "active",
+      "latestVersion": "2.181.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @tencent-ai/codebuddy-code"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@tencent-ai/codebuddy-code",
+        "updateCmd": "codebuddy update"
+      }
+    },
+    {
+      "id": "qoder",
+      "baseArgs": "",
+      "displayName": "Qoder",
+      "command": "qoder",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "",
+      "icon": "qoder.svg",
+      "url": "https://qoder.com/",
+      "status": "active",
+      "latestVersion": "1.1.85",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @qoder-ai/qodercli"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@qoder-ai/qodercli",
+        "updateCmd": "qoder update"
+      }
+    },
+    {
+      "id": "qodercn",
+      "baseArgs": "",
+      "displayName": "Qoder CN",
+      "command": "qodercn",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "",
+      "icon": "qodercn.svg",
+      "url": "https://qoder.cn/",
+      "status": "active",
+      "latestVersion": "",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @qodercn-ai/qoderclicn"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@qodercn-ai/qoderclicn",
+        "updateCmd": "qodercn update"
+      }
+    },
+    {
+      "id": "devin",
+      "baseArgs": "",
+      "displayName": "Devin",
+      "command": "devin",
+      "skipFlag": "--permission-mode bypass",
+      "resumeFlag": "--resume",
+      "icon": "devin.svg",
+      "url": "https://devin.ai/",
+      "status": "active",
+      "latestVersion": "3000.12.17",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/devin; rm -rf ~/.local/share/devin",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\devin\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://cli.devin.ai/install.sh | bash",
+        "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex",
+        "updateCmd": "devin update",
+        "latest": {
+          "web": {
+            "url": "https://static.devin.ai/cli/current/manifest.json",
+            "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "grok",
+      "baseArgs": "",
+      "displayName": "Grok",
+      "command": "grok",
+      "skipFlag": "--permission-mode bypassPermissions",
+      "resumeFlag": "--resume",
+      "icon": "grok.svg",
+      "url": "https://grok.com/",
+      "status": "active",
+      "latestVersion": "1.0.77",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @xai-official/grok"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@xai-official/grok",
+        "updateCmd": "grok update"
+      }
+    },
+    {
+      "id": "antigravity",
+      "baseArgs": "",
+      "displayName": "Antigravity",
+      "command": "agy",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "--conversation",
+      "icon": "antigravity.png",
+      "url": "https://antigravity.google/",
+      "status": "unknown",
+      "latestVersion": "1.4.5",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/agy; rm -rf ~/.cache/antigravity",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\agy\",\"$env:LOCALAPPDATA\\antigravity\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+        "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex",
+        "updateCmd": "agy update",
+        "latest": {
+          "web": {
+            "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/darwin_arm64.json",
+            "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "mistral-vibe",
+      "baseArgs": "",
+      "displayName": "Mistral Vibe",
+      "command": "vibe",
+      "skipFlag": "--agent auto-approve",
+      "resumeFlag": "",
+      "icon": "mistral-vibe.svg",
+      "url": "https://mistral.ai/",
+      "status": "active",
+      "latestVersion": "3.1.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "pip uninstall -y mistral-vibe"
+      },
+      "install": {
+        "type": "pip",
+        "pkg": "mistral-vibe",
+        "updateCmd": "vibe update"
+      }
+    },
+    {
+      "id": "kilo",
+      "baseArgs": "",
+      "displayName": "Kilo Code",
+      "command": "kilo",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "kilo.svg",
+      "url": "https://kilocode.ai/",
+      "status": "active",
+      "latestVersion": "7.8.27",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @kilocode/cli"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@kilocode/cli",
+        "updateCmd": "kilo upgrade"
+      }
+    },
+    {
+      "id": "hermes",
+      "baseArgs": "",
+      "displayName": "Hermes",
+      "command": "hermes",
+      "skipFlag": "--yolo",
+      "resumeFlag": "-r",
+      "icon": "hermes.png",
+      "url": "https://hermes-agent.nousresearch.com/",
+      "status": "active",
+      "latestVersion": "0.23.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf ~/.hermes/hermes-agent; rm -f ~/.local/bin/hermes",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:USERPROFILE\\.hermes\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+        "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
+        "updateCmd": "hermes update",
+        "latest": {
+          "github": "NousResearch/hermes-agent"
+        }
+      }
+    },
+    {
+      "id": "pi",
+      "baseArgs": "",
+      "displayName": "Pi",
+      "command": "pi",
+      "skipFlag": "--approve",
+      "resumeFlag": "-r",
+      "icon": "pi.svg",
+      "url": "https://pi.dev/",
+      "status": "active",
+      "latestVersion": "1.5.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @earendil-works/pi-coding-agent"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@earendil-works/pi-coding-agent",
+        "updateCmd": "pi update --self"
+      }
+    },
+    {
+      "id": "droid",
+      "baseArgs": "",
+      "displayName": "Droid",
+      "command": "droid",
+      "skipFlag": "--auto high",
+      "resumeFlag": "--resume",
+      "icon": "droid.svg",
+      "url": "https://factory.ai/",
+      "status": "unknown",
+      "latestVersion": "1.6.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/droid",
+        "cmdWin": "Remove-Item -Force \"$env:USERPROFILE\\bin\\droid.exe\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://app.factory.ai/cli | sh",
+        "cmdWin": "irm https://app.factory.ai/cli/windows | iex",
+        "updateCmd": "droid update",
+        "latest": {
+          "web": {
+            "url": "https://app.factory.ai/cli",
+            "pattern": "VER=\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "aug",
+      "baseArgs": "",
+      "displayName": "Auggie",
+      "command": "auggie",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "aug.svg",
+      "url": "https://augmentcode.com/",
+      "status": "active",
+      "latestVersion": "0.37.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @augmentcode/auggie"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@augmentcode/auggie",
+        "updateCmd": "auggie upgrade --skip-confirmation"
+      }
+    },
+    {
+      "id": "prime-agent",
+      "baseArgs": "",
+      "displayName": "Prime Agent",
+      "command": "prime-agent",
+      "skipFlag": "",
+      "resumeFlag": "--resume",
+      "icon": "prime-agent.png",
+      "url": "https://www.primeintellect.ai/",
+      "status": "unknown",
+      "latestVersion": "",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "viaWsl",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/prime-agent; rm -rf ~/.local/share/prime-agent ~/.prime/agent",
+        "cmdWin": "Remove-Item -Force \"$env:USERPROFILE\\.local\\bin\\prime-agent*\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"$env:USERPROFILE\\.prime\\agent\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh",
+        "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\"",
+        "updateCmd": "prime-agent update",
+        "latest": {
+          "web": {
+            "url": "https://pub-728493de92a943e2a9b2d17b4719f318.r2.dev/stable",
+            "pattern": "(\\d+\\.\\d+\\.\\d+)"
+          }
+        }
+      }
+    },
+    {
+      "id": "autohand",
+      "baseArgs": "",
+      "displayName": "Autohand",
+      "command": "autohand",
+      "skipFlag": "--unrestricted",
+      "resumeFlag": "",
+      "icon": "autohand.svg",
+      "url": "https://autohand.ai/",
+      "status": "active",
+      "latestVersion": "0.9.10",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g autohand-cli"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "autohand-cli",
+        "updateCmd": "autohand update"
+      }
+    },
+    {
+      "id": "command-code",
+      "baseArgs": "",
+      "displayName": "Command Code",
+      "command": "command-code",
+      "skipFlag": "--yolo",
+      "resumeFlag": "",
+      "icon": "command-code.svg",
+      "url": "https://commandcode.ai/",
+      "status": "active",
+      "latestVersion": "1.88.5",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g command-code"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "command-code",
+        "updateCmd": "command-code update"
+      }
+    },
+    {
+      "id": "ante",
+      "baseArgs": "",
+      "displayName": "Ante",
+      "command": "ante",
+      "skipFlag": "--yolo",
+      "resumeFlag": "",
+      "icon": "ante.svg",
+      "url": "https://antigma.ai/",
+      "status": "unknown",
+      "latestVersion": "",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "unsupported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf ~/.ante"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://ante.run/install.sh | bash",
+        "cmdWin": "irm https://ante.run/install.ps1 | iex",
+        "updateCmd": "ante update",
+        "latest": {
+          "web": {
+            "url": "https://download.ante.run/channels/stable/manifest.json",
+            "pattern": "\"version\"\\s*:\\s*\"v?([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "codebuff",
+      "baseArgs": "",
+      "displayName": "Codebuff",
+      "command": "codebuff",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "codebuff.png",
+      "url": "https://codebuff.com/",
+      "status": "active",
+      "latestVersion": "1.0.688",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g codebuff"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "codebuff"
+      }
+    },
+    {
+      "id": "omp",
+      "baseArgs": "",
+      "displayName": "Oh My Pi",
+      "command": "omp",
+      "skipFlag": "",
+      "resumeFlag": "--resume",
+      "icon": "omp.svg",
+      "url": "https://omp.sh/",
+      "status": "active",
+      "latestVersion": "18.18.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/omp; rm -rf ~/.local/state/omp",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\omp\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://omp.sh/install | sh",
+        "cmdWin": "irm https://omp.sh/install.ps1 | iex",
+        "updateCmd": "omp update",
+        "latest": {
+          "npm": "@oh-my-pi/pi-coding-agent"
+        }
+      }
+    },
+    {
+      "id": "agoragentic",
+      "baseArgs": "",
+      "displayName": "Agoragentic",
+      "command": "agoragentic-mcp",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "agoragentic.png",
+      "url": "https://agoragentic.com",
+      "status": "maintaining",
+      "latestVersion": "1.3.6",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g agoragentic-mcp"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "agoragentic-mcp"
+      }
+    },
+    {
+      "id": "cortex-code",
+      "baseArgs": "",
+      "displayName": "Cortex Code",
+      "command": "cortex",
+      "skipFlag": "--dangerously-allow-all-tool-calls",
+      "resumeFlag": "-r",
+      "icon": "cortex-code.png",
+      "url": "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code",
+      "status": "unknown",
+      "latestVersion": "1.0.73",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/cortex ~/.local/bin/cortex.cmd; rm -rf ~/.local/share/cortex",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\cortex\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh",
+        "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex",
+        "updateCmd": "cortex update",
+        "latest": {
+          "web": {
+            "url": "https://sfc-repo.snowflakecomputing.com/cortex-code-cli/a4643c4278/stable_version.txt",
+            "pattern": "(\\d+\\.\\d+\\.\\d+)"
+          }
+        }
+      }
+    },
+    {
+      "id": "corust-agent",
+      "baseArgs": "",
+      "displayName": "Corust Agent",
+      "command": "corust",
+      "skipFlag": "",
+      "resumeFlag": "resume",
+      "icon": "corust-agent.svg",
+      "url": "https://corust.ai/",
+      "status": "unknown",
+      "latestVersion": "0.6.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "unsupported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "brew uninstall corust; brew untap Corust-ai/cli 2>/dev/null"
+      },
+      "install": {
+        "type": "brew",
+        "pkg": "Corust-ai/cli/corust",
+        "latest": {
+          "github": "Corust-ai/homebrew-cli"
+        }
+      }
+    },
+    {
+      "id": "crow-cli",
+      "baseArgs": "run -i",
+      "displayName": "Crow CLI",
+      "command": "crow-cli",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "crow-cli.svg",
+      "url": "https://crow-ai.dev",
+      "status": "active",
+      "latestVersion": "0.1.49",
+      "platformSupport": {
+        "darwin": "unsupported",
+        "win32": "viaWsl",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "uv tool uninstall crow-cli",
+        "cmdWin": "wsl -e bash -c \"uv tool uninstall crow-cli\""
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://crow-ai.dev/install.sh | bash",
+        "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\"",
+        "latest": {
+          "pypi": "crow-cli"
+        }
+      }
+    },
+    {
+      "id": "deepagents",
+      "baseArgs": "",
+      "displayName": "DeepAgents",
+      "command": "deepagents-acp",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "deepagents.svg",
+      "url": "https://docs.langchain.com/oss/javascript/deepagents/overview",
+      "status": "active",
+      "latestVersion": "0.1.40",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g deepagents-acp"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "deepagents-acp"
+      }
+    },
+    {
+      "id": "dirac",
+      "baseArgs": "",
+      "displayName": "Dirac",
+      "command": "dirac",
+      "skipFlag": "--yolo",
+      "resumeFlag": "--continue",
+      "icon": "dirac.svg",
+      "url": "https://dirac.run",
+      "status": "active",
+      "latestVersion": "0.5.24",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g dirac-cli"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "dirac-cli",
+        "updateCmd": "dirac update"
+      }
+    },
+    {
+      "id": "dimcode",
+      "baseArgs": "",
+      "displayName": "DimCode",
+      "command": "dim",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "dimcode.png",
+      "url": "https://dimagent.com/docs/acp.html",
+      "status": "active",
+      "latestVersion": "0.5.24",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g dimcode"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "dimcode",
+        "updateCmd": "dim upgrade"
+      }
+    },
+    {
+      "id": "fast-agent",
+      "baseArgs": "",
+      "displayName": "Fast Agent",
+      "command": "fast-agent",
+      "skipFlag": "",
+      "resumeFlag": "--resume",
+      "icon": "fast-agent.svg",
+      "url": "https://fast-agent.ai",
+      "status": "active",
+      "latestVersion": "0.10.1",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "pip uninstall -y fast-agent-mcp"
+      },
+      "install": {
+        "type": "pip",
+        "pkg": "fast-agent-mcp"
+      }
+    },
+    {
+      "id": "glm-agent",
+      "baseArgs": "",
+      "displayName": "GLM Agent",
+      "command": "glm-acp-agent",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "glm-agent.svg",
+      "url": "https://github.com/stefandevo/glm-acp-agent",
+      "status": "active",
+      "latestVersion": "1.17.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g glm-acp-agent"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "glm-acp-agent"
+      }
+    },
+    {
+      "id": "harn",
+      "baseArgs": "",
+      "displayName": "Harn",
+      "command": "harn",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "harn.svg",
+      "url": "https://harnlang.com",
+      "status": "active",
+      "latestVersion": "0.10.190",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -rf ~/.harn; rm -f ~/.local/bin/harn ~/bin/harn",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\harn\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://harnlang.com/install.sh | sh",
+        "cmdWin": "irm https://harnlang.com/install.ps1 | iex",
+        "updateCmd": "harn upgrade",
+        "latest": {
+          "github": "burin-labs/harn"
+        }
+      }
+    },
+    {
+      "id": "junie",
+      "baseArgs": "",
+      "displayName": "Junie",
+      "command": "junie",
+      "skipFlag": "--brave",
+      "resumeFlag": "--resume",
+      "icon": "junie.svg",
+      "url": "https://junie.jetbrains.com",
+      "status": "active",
+      "latestVersion": "3959.5.0",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/junie; rm -rf ~/.local/share/junie",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:USERPROFILE\\.local\\share\\junie\",\"$env:USERPROFILE\\.local\\bin\\junie*\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://junie.jetbrains.com/install.sh | bash",
+        "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex",
+        "updateCmd": "junie update",
+        "latest": {
+          "web": {
+            "url": "https://raw.githubusercontent.com/jetbrains-junie/junie/main/update-info.jsonl",
+            "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
+          }
+        }
+      }
+    },
+    {
+      "id": "minion-code",
+      "baseArgs": "",
+      "displayName": "Minion Code",
+      "command": "minion-code",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "--continue",
+      "icon": "minion-code.svg",
+      "url": "https://github.com/femto/minion-code",
+      "status": "active",
+      "latestVersion": "0.1.45",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "pip uninstall -y minion-code"
+      },
+      "install": {
+        "type": "pip",
+        "pkg": "minion-code"
+      }
+    },
+    {
+      "id": "nova",
+      "baseArgs": "",
+      "displayName": "Nova",
+      "command": "nova",
+      "skipFlag": "--unleash",
+      "resumeFlag": "--continue",
+      "icon": "nova.svg",
+      "url": "https://www.compassap.ai/portfolio/nova.html",
+      "status": "active",
+      "latestVersion": "1.1.64",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @compass-ai/nova"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@compass-ai/nova",
+        "updateCmd": "nova update"
+      }
+    },
+    {
+      "id": "poolside",
+      "baseArgs": "",
+      "displayName": "Poolside",
+      "command": "pool",
+      "skipFlag": "--unsafe-auto-allow",
+      "resumeFlag": "-r",
+      "icon": "poolside.svg",
+      "url": "https://poolside.ai",
+      "status": "active",
+      "latestVersion": "1.0.16",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/pool",
+        "cmdWin": "Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\Programs\\pool\" -ErrorAction SilentlyContinue"
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://downloads.poolside.ai/pool/install.sh | sh",
+        "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex",
+        "updateCmd": "pool update",
+        "latest": {
+          "web": {
+            "url": "https://downloads.poolside.ai/pool/pool-latest-version.txt",
+            "pattern": "(\\d+\\.\\d+\\.\\d+)"
+          }
+        }
+      }
+    },
+    {
+      "id": "sigit",
+      "baseArgs": "",
+      "displayName": "siGit Code",
+      "command": "sigit",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "sigit.png",
+      "url": "https://sigit.si/code",
+      "status": "active",
+      "latestVersion": "1.7.10",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "supported",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "npm uninstall -g @getsigit/sigit"
+      },
+      "install": {
+        "type": "npm",
+        "pkg": "@getsigit/sigit"
+      }
+    },
+    {
+      "id": "stakpak",
+      "baseArgs": "",
+      "displayName": "Stakpak",
+      "command": "stakpak",
+      "skipFlag": "",
+      "resumeFlag": "",
+      "icon": "stakpak.png",
+      "url": "https://stakpak.dev",
+      "status": "maintaining",
+      "latestVersion": "0.3.88",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "viaWsl",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/stakpak",
+        "cmdWin": "wsl -e bash -c \"rm -f ~/.local/bin/stakpak\""
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -sSL https://stakpak.dev/install.sh | sh",
+        "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\"",
+        "updateCmd": "stakpak update",
+        "latest": {
+          "github": "stakpak/agent"
+        }
+      }
+    },
+    {
+      "id": "vtcode",
+      "baseArgs": "",
+      "displayName": "VT Code",
+      "command": "vtcode",
+      "skipFlag": "--dangerously-skip-permissions",
+      "resumeFlag": "continue",
+      "icon": "vtcode.png",
+      "url": "https://github.com/vinhnx/VTCode",
+      "status": "active",
+      "latestVersion": "0.181.5",
+      "platformSupport": {
+        "darwin": "supported",
+        "win32": "viaWsl",
+        "linux": "supported"
+      },
+      "uninstall": {
+        "cmd": "rm -f ~/.local/bin/vtcode; rm -rf ~/Applications/VTCode.app",
+        "cmdWin": "wsl -e bash -c \"rm -f ~/.local/bin/vtcode\""
+      },
+      "install": {
+        "type": "shell",
+        "cmd": "curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash",
+        "cmdWin": "wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash\"",
+        "latest": {
+          "github": "vinhnx/vtcode"
         }
       }
     }
-  },
-  {
-    "id": "kimi",
-    "baseArgs": "",
-    "displayName": "Kimi",
-    "command": "kimi",
-    "skipFlag": "--yolo",
-    "resumeFlag": "-r",
-    "icon": "kimi.png",
-    "url": "https://kimi.moonshot.cn/",
-    "install": {
-      "type": "npm",
-      "pkg": "@moonshot-ai/kimi-code",
-      "updateCmd": "kimi upgrade -y"
-    }
-  },
-  {
-    "id": "qwen-code",
-    "baseArgs": "",
-    "displayName": "Qwen Code",
-    "command": "qwen",
-    "skipFlag": "--approval-mode yolo",
-    "resumeFlag": "",
-    "icon": "qwen-code.png",
-    "url": "https://qwen.ai/qwencode",
-    "install": {
-      "type": "npm",
-      "pkg": "@qwen-code/qwen-code",
-      "updateCmd": "qwen update"
-    }
-  },
-  {
-    "id": "trae",
-    "baseArgs": "",
-    "displayName": "TraeCode",
-    "command": "traecli",
-    "skipFlag": "",
-    "resumeFlag": "--resume",
-    "icon": "trae.svg",
-    "url": "https://www.trae.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "sh -c \"$(curl -fsSL https://trae.cn/trae-cli/install_v2.sh)\"",
-      "cmdWin": "irm https://trae.cn/trae-cli/install_v2.ps1 | iex",
-      "latest": {
-        "web": {
-          "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/trae-cli/v2/public/stable/latest.json",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "codebuddy",
-    "baseArgs": "",
-    "displayName": "CodeBuddy",
-    "command": "codebuddy",
-    "skipFlag": "-y",
-    "resumeFlag": "-r",
-    "icon": "codebuddy.svg",
-    "url": "https://www.codebuddy.ai/",
-    "install": {
-      "type": "npm",
-      "pkg": "@tencent-ai/codebuddy-code",
-      "updateCmd": "codebuddy update"
-    }
-  },
-  {
-    "id": "qoder",
-    "baseArgs": "",
-    "displayName": "Qoder",
-    "command": "qoder",
-    "skipFlag": "--dangerously-skip-permissions",
-    "resumeFlag": "",
-    "icon": "qoder.svg",
-    "url": "https://qoder.com/",
-    "install": {
-      "type": "npm",
-      "pkg": "@qoder-ai/qodercli",
-      "updateCmd": "qoder update"
-    }
-  },
-  {
-    "id": "devin",
-    "baseArgs": "",
-    "displayName": "Devin",
-    "command": "devin",
-    "skipFlag": "--permission-mode bypass",
-    "resumeFlag": "--resume",
-    "icon": "devin.svg",
-    "url": "https://devin.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://cli.devin.ai/install.sh | bash",
-      "cmdWin": "irm https://static.devin.ai/cli/setup.ps1 | iex",
-      "updateCmd": "devin update",
-      "latest": {
-        "web": {
-          "url": "https://static.devin.ai/cli/current/manifest.json",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "grok",
-    "baseArgs": "",
-    "displayName": "Grok",
-    "command": "grok",
-    "skipFlag": "--permission-mode bypassPermissions",
-    "resumeFlag": "--resume",
-    "icon": "grok.svg",
-    "url": "https://grok.com/",
-    "install": {
-      "type": "npm",
-      "pkg": "@xai-official/grok",
-      "updateCmd": "grok update"
-    }
-  },
-  {
-    "id": "antigravity",
-    "baseArgs": "",
-    "displayName": "Antigravity",
-    "command": "agy",
-    "skipFlag": "--dangerously-skip-permissions",
-    "resumeFlag": "--conversation",
-    "icon": "antigravity.png",
-    "url": "https://antigravity.google/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://antigravity.google/cli/install.sh | bash",
-      "cmdWin": "irm https://antigravity.google/cli/install.ps1 | iex",
-      "updateCmd": "agy update",
-      "latest": {
-        "web": {
-          "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/darwin_arm64.json",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "mistral-vibe",
-    "baseArgs": "",
-    "displayName": "Mistral Vibe",
-    "command": "vibe",
-    "skipFlag": "--agent auto-approve",
-    "resumeFlag": "",
-    "icon": "mistral-vibe.svg",
-    "url": "https://mistral.ai/",
-    "install": {
-      "type": "pip",
-      "pkg": "mistral-vibe",
-      "updateCmd": "vibe update"
-    }
-  },
-  {
-    "id": "kilo",
-    "baseArgs": "",
-    "displayName": "Kilo Code",
-    "command": "kilo",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "kilo.svg",
-    "url": "https://kilocode.ai/",
-    "install": {
-      "type": "npm",
-      "pkg": "@kilocode/cli",
-      "updateCmd": "kilo upgrade"
-    }
-  },
-  {
-    "id": "hermes",
-    "baseArgs": "",
-    "displayName": "Hermes",
-    "command": "hermes",
-    "skipFlag": "--yolo",
-    "resumeFlag": "-r",
-    "icon": "hermes.png",
-    "url": "https://hermes-agent.nousresearch.com/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
-      "cmdWin": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
-      "updateCmd": "hermes update",
-      "latest": {
-        "github": "NousResearch/hermes-agent"
-      }
-    }
-  },
-  {
-    "id": "pi",
-    "baseArgs": "",
-    "displayName": "Pi",
-    "command": "pi",
-    "skipFlag": "--approve",
-    "resumeFlag": "-r",
-    "icon": "pi.svg",
-    "url": "https://pi.dev/",
-    "install": {
-      "type": "npm",
-      "pkg": "@earendil-works/pi-coding-agent",
-      "updateCmd": "pi update --self"
-    }
-  },
-  {
-    "id": "droid",
-    "baseArgs": "",
-    "displayName": "Droid",
-    "command": "droid",
-    "skipFlag": "--auto high",
-    "resumeFlag": "--resume",
-    "icon": "droid.svg",
-    "url": "https://factory.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://app.factory.ai/cli | sh",
-      "cmdWin": "irm https://app.factory.ai/cli/windows | iex",
-      "updateCmd": "droid update",
-      "latest": {
-        "web": {
-          "url": "https://app.factory.ai/cli",
-          "pattern": "VER=\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "aug",
-    "baseArgs": "",
-    "displayName": "Auggie",
-    "command": "auggie",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "aug.svg",
-    "url": "https://augmentcode.com/",
-    "install": {
-      "type": "npm",
-      "pkg": "@augmentcode/auggie",
-      "updateCmd": "auggie upgrade --skip-confirmation"
-    }
-  },
-  {
-    "id": "prime-agent",
-    "baseArgs": "",
-    "displayName": "Prime Agent",
-    "command": "prime-agent",
-    "skipFlag": "",
-    "resumeFlag": "--resume",
-    "icon": "prime-agent.png",
-    "url": "https://www.primeintellect.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh",
-      "cmdWin": "wsl -e bash -c \"curl --proto '=https' --proto-redir '=https' -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh\"",
-      "updateCmd": "prime-agent update",
-      "latest": {
-        "web": {
-          "url": "https://pub-728493de92a943e2a9b2d17b4719f318.r2.dev/stable",
-          "pattern": "(\\d+\\.\\d+\\.\\d+)"
-        }
-      }
-    }
-  },
-  {
-    "id": "autohand",
-    "baseArgs": "",
-    "displayName": "Autohand",
-    "command": "autohand",
-    "skipFlag": "--unrestricted",
-    "resumeFlag": "",
-    "icon": "autohand.svg",
-    "url": "https://autohand.ai/",
-    "install": {
-      "type": "npm",
-      "pkg": "autohand-cli",
-      "updateCmd": "autohand update"
-    }
-  },
-  {
-    "id": "command-code",
-    "baseArgs": "",
-    "displayName": "Command Code",
-    "command": "command-code",
-    "skipFlag": "--yolo",
-    "resumeFlag": "",
-    "icon": "command-code.svg",
-    "url": "https://commandcode.ai/",
-    "install": {
-      "type": "npm",
-      "pkg": "command-code",
-      "updateCmd": "command-code update"
-    }
-  },
-  {
-    "id": "ante",
-    "baseArgs": "",
-    "displayName": "Ante",
-    "command": "ante",
-    "skipFlag": "--yolo",
-    "resumeFlag": "",
-    "icon": "ante.svg",
-    "url": "https://antigma.ai/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://ante.run/install.sh | bash",
-      "cmdWin": "irm https://ante.run/install.ps1 | iex",
-      "updateCmd": "ante update",
-      "latest": {
-        "web": {
-          "url": "https://download.ante.run/channels/stable/manifest.json",
-          "pattern": "\"version\"\\s*:\\s*\"v?([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "codebuff",
-    "baseArgs": "",
-    "displayName": "Codebuff",
-    "command": "codebuff",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "codebuff.png",
-    "url": "https://codebuff.com/",
-    "install": {
-      "type": "npm",
-      "pkg": "codebuff"
-    }
-  },
-  {
-    "id": "omp",
-    "baseArgs": "",
-    "displayName": "Oh My Pi",
-    "command": "omp",
-    "skipFlag": "",
-    "resumeFlag": "--resume",
-    "icon": "omp.svg",
-    "url": "https://omp.sh/",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://omp.sh/install | sh",
-      "cmdWin": "irm https://omp.sh/install.ps1 | iex",
-      "updateCmd": "omp update",
-      "latest": {
-        "npm": "@oh-my-pi/pi-coding-agent"
-      }
-    }
-  },
-  {
-    "id": "agoragentic",
-    "baseArgs": "",
-    "displayName": "Agoragentic",
-    "command": "agoragentic-mcp",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "agoragentic.png",
-    "url": "https://agoragentic.com",
-    "install": {
-      "type": "npm",
-      "pkg": "agoragentic-mcp"
-    }
-  },
-  {
-    "id": "cortex-code",
-    "baseArgs": "",
-    "displayName": "Cortex Code",
-    "command": "cortex",
-    "skipFlag": "--dangerously-allow-all-tool-calls",
-    "resumeFlag": "-r",
-    "icon": "cortex-code.png",
-    "url": "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh",
-      "cmdWin": "irm https://ai.snowflake.com/static/cc-scripts/install.ps1 | iex",
-      "updateCmd": "cortex update",
-      "latest": {
-        "web": {
-          "url": "https://sfc-repo.snowflakecomputing.com/cortex-code-cli/a4643c4278/stable_version.txt",
-          "pattern": "(\\d+\\.\\d+\\.\\d+)"
-        }
-      }
-    }
-  },
-  {
-    "id": "corust-agent",
-    "baseArgs": "",
-    "displayName": "Corust Agent",
-    "command": "corust",
-    "skipFlag": "",
-    "resumeFlag": "resume",
-    "icon": "corust-agent.svg",
-    "url": "https://corust.ai/",
-    "install": {
-      "type": "brew",
-      "pkg": "Corust-ai/cli/corust",
-      "latest": {
-        "github": "Corust-ai/homebrew-cli"
-      }
-    }
-  },
-  {
-    "id": "crow-cli",
-    "baseArgs": "run -i",
-    "displayName": "Crow CLI",
-    "command": "crow-cli",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "crow-cli.svg",
-    "url": "https://crow-ai.dev",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://crow-ai.dev/install.sh | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://crow-ai.dev/install.sh | bash\"",
-      "latest": {
-        "pypi": "crow-cli"
-      }
-    }
-  },
-  {
-    "id": "deepagents",
-    "baseArgs": "",
-    "displayName": "DeepAgents",
-    "command": "deepagents-acp",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "deepagents.svg",
-    "url": "https://docs.langchain.com/oss/javascript/deepagents/overview",
-    "install": {
-      "type": "npm",
-      "pkg": "deepagents-acp"
-    }
-  },
-  {
-    "id": "dirac",
-    "baseArgs": "",
-    "displayName": "Dirac",
-    "command": "dirac",
-    "skipFlag": "--yolo",
-    "resumeFlag": "--continue",
-    "icon": "dirac.svg",
-    "url": "https://dirac.run",
-    "install": {
-      "type": "npm",
-      "pkg": "dirac-cli",
-      "updateCmd": "dirac update"
-    }
-  },
-  {
-    "id": "dimcode",
-    "baseArgs": "",
-    "displayName": "DimCode",
-    "command": "dim",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "dimcode.png",
-    "url": "https://dimagent.com/docs/acp.html",
-    "install": {
-      "type": "npm",
-      "pkg": "dimcode",
-      "updateCmd": "dim upgrade"
-    }
-  },
-  {
-    "id": "fast-agent",
-    "baseArgs": "",
-    "displayName": "Fast Agent",
-    "command": "fast-agent",
-    "skipFlag": "",
-    "resumeFlag": "--resume",
-    "icon": "fast-agent.svg",
-    "url": "https://fast-agent.ai",
-    "install": {
-      "type": "pip",
-      "pkg": "fast-agent-mcp"
-    }
-  },
-  {
-    "id": "glm-agent",
-    "baseArgs": "",
-    "displayName": "GLM Agent",
-    "command": "glm-acp-agent",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "glm-agent.svg",
-    "url": "https://github.com/stefandevo/glm-acp-agent",
-    "install": {
-      "type": "npm",
-      "pkg": "glm-acp-agent"
-    }
-  },
-  {
-    "id": "harn",
-    "baseArgs": "",
-    "displayName": "Harn",
-    "command": "harn",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "harn.svg",
-    "url": "https://harnlang.com",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://harnlang.com/install.sh | sh",
-      "cmdWin": "irm https://harnlang.com/install.ps1 | iex",
-      "updateCmd": "harn upgrade",
-      "latest": {
-        "github": "burin-labs/harn"
-      }
-    }
-  },
-  {
-    "id": "junie",
-    "baseArgs": "",
-    "displayName": "Junie",
-    "command": "junie",
-    "skipFlag": "--brave",
-    "resumeFlag": "--resume",
-    "icon": "junie.svg",
-    "url": "https://junie.jetbrains.com",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://junie.jetbrains.com/install.sh | bash",
-      "cmdWin": "irm https://junie.jetbrains.com/install.ps1 | iex",
-      "updateCmd": "junie update",
-      "latest": {
-        "web": {
-          "url": "https://raw.githubusercontent.com/jetbrains-junie/junie/main/update-info.jsonl",
-          "pattern": "\"version\"\\s*:\\s*\"([^\"]+)\""
-        }
-      }
-    }
-  },
-  {
-    "id": "minion-code",
-    "baseArgs": "",
-    "displayName": "Minion Code",
-    "command": "minion-code",
-    "skipFlag": "--dangerously-skip-permissions",
-    "resumeFlag": "--continue",
-    "icon": "minion-code.svg",
-    "url": "https://github.com/femto/minion-code",
-    "install": {
-      "type": "pip",
-      "pkg": "minion-code"
-    }
-  },
-  {
-    "id": "nova",
-    "baseArgs": "",
-    "displayName": "Nova",
-    "command": "nova",
-    "skipFlag": "--unleash",
-    "resumeFlag": "--continue",
-    "icon": "nova.svg",
-    "url": "https://www.compassap.ai/portfolio/nova.html",
-    "install": {
-      "type": "npm",
-      "pkg": "@compass-ai/nova",
-      "updateCmd": "nova update"
-    }
-  },
-  {
-    "id": "poolside",
-    "baseArgs": "",
-    "displayName": "Poolside",
-    "command": "pool",
-    "skipFlag": "--unsafe-auto-allow",
-    "resumeFlag": "-r",
-    "icon": "poolside.svg",
-    "url": "https://poolside.ai",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://downloads.poolside.ai/pool/install.sh | sh",
-      "cmdWin": "irm https://downloads.poolside.ai/pool/install.ps1 | iex",
-      "updateCmd": "pool update",
-      "latest": {
-        "web": {
-          "url": "https://downloads.poolside.ai/pool/pool-latest-version.txt",
-          "pattern": "(\\d+\\.\\d+\\.\\d+)"
-        }
-      }
-    }
-  },
-  {
-    "id": "sigit",
-    "baseArgs": "",
-    "displayName": "siGit Code",
-    "command": "sigit",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "sigit.png",
-    "url": "https://sigit.si/code",
-    "install": {
-      "type": "npm",
-      "pkg": "@getsigit/sigit"
-    }
-  },
-  {
-    "id": "stakpak",
-    "baseArgs": "",
-    "displayName": "Stakpak",
-    "command": "stakpak",
-    "skipFlag": "",
-    "resumeFlag": "",
-    "icon": "stakpak.png",
-    "url": "https://stakpak.dev",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -sSL https://stakpak.dev/install.sh | sh",
-      "cmdWin": "wsl -e bash -c \"curl -sSL https://stakpak.dev/install.sh | sh\"",
-      "updateCmd": "stakpak update",
-      "latest": {
-        "github": "stakpak/agent"
-      }
-    }
-  },
-  {
-    "id": "vtcode",
-    "baseArgs": "",
-    "displayName": "VT Code",
-    "command": "vtcode",
-    "skipFlag": "--dangerously-skip-permissions",
-    "resumeFlag": "continue",
-    "icon": "vtcode.png",
-    "url": "https://github.com/vinhnx/VTCode",
-    "install": {
-      "type": "shell",
-      "cmd": "curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash",
-      "cmdWin": "wsl -e bash -c \"curl -fsSL https://raw.githubusercontent.com/vinhnx/VTCode/main/scripts/install.sh | bash\"",
-      "latest": {
-        "github": "vinhnx/vtcode"
-      }
-    }
-  }
-]
+  ]
+}

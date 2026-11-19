@@ -56,31 +56,58 @@ class AgentExtenderSettings : PersistentStateComponent<AgentExtenderSettings.Sta
     fun ensureSyncScheduled() {
         if (syncScheduled) return
         syncScheduled = true
+        // Show the previous hot-update catalog instantly from disk before any network work.
+        AgentCatalogUpdater.loadCached()
         val app = ApplicationManager.getApplication()
         app.executeOnPooledThread {
+            // Finalize the remote catalog FIRST, then decide which commands are installed against that
+            // final registry. Probing installs first made a freshly added agent (e.g. qoder) get judged
+            // against a stale/partial catalog, so it only appeared after a restart warmed the cache.
+            AgentCatalogUpdater.refreshBlocking()
             syncInstalledAgents()
         }
     }
 
     /**
-     * Sync currently-installed agents into the config; called once per startup.
-     *  - Promoted agents (e.g. claude/codex/codebuddy, not built into IDEA): if detected as installed, add a permission rule
-     *    AND add to customTools so it appears in the YOLO panel.
-     *  All are "skip if present" — idempotent and never deletes existing entries, so running once per startup is safe.
+     * Reconcile the machine's installed agents into the config; called once per startup, after the
+     * remote catalog has been finalized in [AgentRegistry].
+     *  - Full replace of the persisted installedCommands cache: probe (command -v / --version) every
+     *    catalog command plus user-added custom tools, and drop anything no longer resolvable (e.g.
+     *    qoder after ~/.qoder was removed). This is idempotent across restarts.
+     *  - For each detected installed catalog agent, ensure a permission rule (skip flag) exists.
+     *    Built-ins are NOT written to customTools — they come from the catalog and show in the panel
+     *    via installedCommands. Any legacy customTools entry for a catalog agent is pruned below.
+     *  - Finally fireChanged() on the EDT so every install-state view refreshes immediately.
      *  Note: spawns processes, so the caller must ensure this runs on a background thread.
      */
     fun syncInstalledAgents() {
+        // Reconcile the persisted install cache against the FINAL catalog (the remote list was
+        // merged in just before this). Include user-added custom tools so their commands are not
+        // dropped. This is a full replace, not markInstalled: an agent uninstalled since last run
+        // (e.g. qoder after ~/.qoder was removed) must stop being reported as installed.
+        val commands = (AgentRegistry.agents.asSequence().map { it.command } +
+            currentState.customTools.asSequence().map { it.command }).distinct().toList()
+        val installed = InstalledAgents.syncInstalled(commands)
+
         for (def in AgentRegistry.agents) {
-            if (!AgentDetector.canExecute(def.command)) continue
+            if (def.command.lowercase() !in installed) continue
             if (currentState.permissionRules.none { it.agentId == def.command }) {
                 currentState.permissionRules.add(PermissionRule(def.command, def.skipFlag))
             }
-            if (currentState.customTools.none { it.id == def.id }) {
-                currentState.customTools.add(
-                    CustomTool(id = def.id, displayName = def.displayName, command = def.command)
-                )
-            }
         }
+
+        // Prune legacy customTools entries that merely mirror a catalog agent (e.g. qoder, which older
+        // versions auto-added here). They are redundant — built-ins come from the catalog — and made a
+        // removed built-in look like a user custom tool. Genuine user additions (not in the catalog) stay.
+        val catalogIds = AgentRegistry.agents.map { it.id.lowercase() }.toSet()
+        val catalogCommands = AgentRegistry.agents.map { it.command.lowercase() }.toSet()
+        currentState.customTools.removeAll { tool ->
+            tool.id.lowercase() in catalogIds || tool.command.lowercase() in catalogCommands
+        }
+        // Detection is complete — refresh every list that renders install state (terminal dropdown,
+        // Manage Agents page, Settings table) on the EDT. This is what makes an uninstalled agent
+        // (e.g. qoder after ~/.qoder was removed) disappear without a restart or manual reopen.
+        ApplicationManager.getApplication().invokeLater { fireChanged() }
     }
 
     override fun getState(): State = currentState

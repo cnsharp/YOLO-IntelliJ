@@ -70,4 +70,26 @@ object InstalledAgents {
         }
         return true
     }
+
+    /**
+     * Full startup reconciliation: re-detect every [commands] and REPLACE the cache with the result.
+     * Unlike [markInstalled] (add-only) and [rescan] (async, UI callback), this is synchronous and
+     * drops commands that were uninstalled since the previous run — e.g. qoder after ~/.qoder was
+     * removed. Call off the EDT. Returns the final installed set.
+     */
+    fun syncInstalled(commands: Collection<String>): Set<String> {
+        val detected = commands.asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .filter { AgentDetector.canExecute(it) }
+            .map { it.lowercase() }
+            .toSet()
+        val state = AgentExtenderSettings.getInstance().state
+        synchronized(lock) {
+            state.installedCommands.clear()
+            state.installedCommands.addAll(detected.sorted())
+        }
+        return detected
+    }
 }

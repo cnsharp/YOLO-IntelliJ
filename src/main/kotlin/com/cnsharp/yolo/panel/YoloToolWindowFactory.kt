@@ -448,17 +448,22 @@ private class YoloPanel(
 
     /** Populate the dropdown from the persisted installed-agents cache (instant, no PATH probes). */
     private fun populateFromCache(rows: List<AgentRow>) {
-        val cached = InstalledAgents.installed()
-        // Startup detection (syncInstalledAgents) records the agents it probed into customTools. Until the
-        // first background PATH scan has filled the installed cache, fall back to those so a fresh sandbox
-        // never opens with an empty dropdown. If neither has data yet, show every row rather than nothing;
-        // the background rescan narrows the list to the installed set once it finishes.
-        val fallback = AgentExtenderSettings.getInstance().state.customTools
-            .map { it.command.lowercase().trim() }
-            .filter { it.isNotBlank() }
-            .toSet()
-        val known = cached.ifEmpty { fallback }
-        val visible = if (known.isEmpty()) rows else rows.filter {
+        // The installed cache is the source of truth for BUILT-IN agents. Genuine user-added custom
+        // tools (those matching no built-in) are different: sync only probes catalog commands, so a
+        // tool added in Settings never enters the cache and would stay invisible. Include just those
+        // here so it shows immediately after Apply. The catalog filter is defensive: a legacy
+        // customTools entry mirroring a built-in stays gated by the install cache, so a removed
+        // built-in cannot reappear even before startup sync prunes that entry.
+        val known = InstalledAgents.installed().toMutableSet()
+        val catalogCommands = AgentRegistry.agents.map { it.command.lowercase() }.toSet()
+        val catalogIds = AgentRegistry.agents.map { it.id.lowercase() }.toSet()
+        known += AgentExtenderSettings.getInstance().state.customTools
+            .asSequence()
+            .filter { it.command.lowercase() !in catalogCommands && it.id.lowercase() !in catalogIds }
+            .map { it.command.lowercase().trim() }.filter { it.isNotBlank() }
+        // Before the first probe the cache may be empty — show every row rather than nothing, then let
+        // the background rescan narrow the list once it finishes.
+        val visible = if (InstalledAgents.installed().isEmpty()) rows else rows.filter {
             it.command.isBlank() || it.id == MANAGE_AGENTS_ID || known.contains(it.command.lowercase())
         }
         agentCombo.removeAllItems()

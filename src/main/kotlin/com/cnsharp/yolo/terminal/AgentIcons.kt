@@ -7,6 +7,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.application.PathManager
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
@@ -88,8 +89,13 @@ object AgentIcons {
         val key = "${agentId.lowercase()}|$iconPath|${if (dark) "d" else "l"}"
         cache[key]?.let { return it }
 
+        val bundledPath = AgentRegistry.iconFor(agentId)
+        val bundledIcon = bundledPath?.takeIf {
+            AgentIcons::class.java.classLoader.getResource(it.trimStart('/')) != null
+        }?.let { loadBundled(it) }
         val icon = loadUserIcon(iconPath)
-            ?: AgentRegistry.iconFor(agentId)?.let { loadBundled(it) }
+            ?: bundledIcon
+            ?: loadCachedIcon(agentId)
             ?: DEFAULT
 
         // On a dark theme, monochrome/dark glyphs (black wordmarks like cline) are invisible; lighten them.
@@ -209,6 +215,21 @@ object AgentIcons {
             LOG.warn("${Yolo.NAME}: bundled icon load failed: $path", e)
             DEFAULT
         }
+
+    /** Load a hot-update cached icon from <config>/yolo/icons/agents/<icon>, if present. */
+    private fun loadCachedIcon(agentId: String): Icon? {
+        val iconFile = AgentRegistry.byId(agentId)?.icon?.takeIf { it.isNotBlank() }
+            ?.split("/")?.last() ?: return null
+        val dir = File(PathManager.getConfigPath(), "yolo/icons/agents")
+        for (name in listOf(iconFile, iconFile.replace(Regex("\\.[^.]+$"), ".png"),
+                iconFile.replace(Regex("\\.[^.]+$"), ".svg"))) {
+            val file = File(dir, name)
+            if (!file.isFile) continue
+            val raw = loadUserIcon(file.absolutePath) ?: continue
+            return raw
+        }
+        return null
+    }
 
     /**
      * Force any icon (SVG or bitmap, any source size) to render at exactly [SIZE]x[SIZE], scaled to fit.

@@ -1,6 +1,7 @@
 package com.cnsharp.yolo.settings
 
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.diagnostic.Logger
 
@@ -77,17 +78,42 @@ data class AgentDef(
     /** Agent's homepage (e.g. https://claude.ai/) — powers the "Website" button on the Manage Agents card.
      *  Distinct from [InstallSpec.url], which is the install/download page (blank for npm/pip/brew agents). */
     val url: String = "",
-    val install: InstallSpec? = null
+    val install: InstallSpec? = null,
+    /** Vendor-lifecycle status from the remote v2 catalog (active/maintaining/stale/closed/unknown).
+     *  Bundled v1 entries have no status and are treated as "active". */
+    val status: String = "active"
 )
 
 object AgentRegistry {
 
     private val LOG = Logger.getInstance(AgentRegistry::class.java)
 
-    val agents: List<AgentDef> = load()
+    /** Bundled catalog (v1, from classpath), immutable. Used as the merge base and fallback. */
+    val bundled: List<AgentDef> = load()
 
-    private val byIdMap: Map<String, AgentDef> = agents.associateBy { it.id.lowercase() }
-    private val byCommandMap: Map<String, AgentDef> = agents.associateBy { it.command.lowercase() }
+    /** Live catalog snapshot, atomically replaced by the startup hot-update. */
+    @Volatile
+    private var currentAgents: List<AgentDef> = bundled
+
+    @Volatile
+    private var byIdMap: Map<String, AgentDef> = bundled.associateBy { it.id.lowercase() }
+
+    @Volatile
+    private var byCommandMap: Map<String, AgentDef> = bundled.associateBy { it.command.lowercase() }
+
+    val agents: List<AgentDef> get() = currentAgents
+
+    /** Replace the live catalog and rebuild the lookup maps atomically. */
+    fun replaceAll(list: List<AgentDef>) {
+        if (list.isEmpty()) return
+        val safe = list.toList()
+        byIdMap = safe.associateBy { it.id.lowercase() }
+        byCommandMap = safe.associateBy { it.command.lowercase() }
+        currentAgents = safe
+    }
+
+    /** Restore the bundled catalog (e.g. when a remote update must be discarded). */
+    fun restoreBundled() = replaceAll(bundled)
 
     fun byId(id: String): AgentDef? = byIdMap[id.lowercase()]
 
@@ -123,20 +149,33 @@ object AgentRegistry {
                 LOG.error("AgentRegistry: agents.json not found in classpath")
                 return emptyList()
             }
-            stream.bufferedReader().use { reader ->
-                val raw: List<AgentDefJson> = Gson().fromJson(
-                    reader,
-                    object : TypeToken<List<AgentDefJson>>() {}.type
-                )
-                raw.map { it.toAgentDef() }
-            }
+            stream.bufferedReader().use { reader -> parseCatalog(reader.readText()) }
         } catch (e: Exception) {
             LOG.error("AgentRegistry: failed to load agents.json", e)
             emptyList()
         }
     }
 
-    private data class AgentDefJson(
+    /**
+     * Parse a catalog body: either the legacy v1 flat array, or the v2 envelope
+     * `{schemaVersion, updatedAt, agents}`. v2 requires schemaVersion == 2 and an
+     * array `agents`; unknown versions are rejected (return empty). Extra v2 fields
+     * on each agent (status/platformSupport/uninstall/…) are ignored by Gson.
+     */
+    fun parseCatalog(raw: String): List<AgentDef> {
+        val root = JsonParser.parseString(raw)
+        val arr = when {
+            root.isJsonArray -> root.asJsonArray
+            root.isJsonObject && root.asJsonObject.has("agents") &&
+                root.asJsonObject.get("schemaVersion")?.asInt == 2 &&
+                root.asJsonObject.get("agents").isJsonArray -> root.asJsonObject.getAsJsonArray("agents")
+            else -> return emptyList()
+        }
+        val rawList: List<AgentDefJson> = Gson().fromJson(arr, object : TypeToken<List<AgentDefJson>>() {}.type)
+        return rawList.map { it.toAgentDef() }
+    }
+
+    data class AgentDefJson(
         val id: String = "",
         val displayName: String = "",
         val command: String = "",
@@ -145,7 +184,8 @@ object AgentRegistry {
         val skipEnv: SkipEnvJson? = null,
         val icon: String = "",
         val url: String = "",
-        val install: InstallSpec? = null
+        val install: InstallSpec? = null,
+        val status: String = "active"
     ) {
         fun toAgentDef() = AgentDef(
             id = id,
@@ -156,9 +196,10 @@ object AgentRegistry {
             skipEnv = skipEnv?.let { it.name to it.value },
             icon = icon,
             url = url,
-            install = install
+            install = install,
+            status = if (status.isBlank()) "active" else status
         )
     }
 
-    private data class SkipEnvJson(val name: String = "", val value: String = "")
+    data class SkipEnvJson(val name: String = "", val value: String = "")
 }
